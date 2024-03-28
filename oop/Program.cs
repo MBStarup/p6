@@ -1,31 +1,46 @@
 ﻿#define RENDERING
 #define INPUT
 
+
+
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Net.Mail;
 using CircularBuffer;
 using SDL2;
 
 
-class Program
+static class Program
 {
+    // honestly move these, just wanted them somewhere "global" for the random spawning to use them
+    public const int WINDOW_X = 1200;
+    public const int WINDOW_Y = 800;
+
+
     public static void Main()
     {
         Game game = new(69420);
 
         // setup the "scene"
-        Vec3D maxPos = (100, 100, 1);
+        Vec3D maxPos = (Program.WINDOW_X, Program.WINDOW_Y, 0);
         for (int i = 0; i < 100; i++)
         {
             var axeMan = new AxeMan
             {
-                Position = (game.Rand.NextDouble(), game.Rand.NextDouble(), game.Rand.NextDouble()) * maxPos,
-                Velocity = (0, 0, 0)
+                Position = (game.Rand.NextDouble(), game.Rand.NextDouble(), game.Rand.NextDouble()) * maxPos
             };
             game.GameObjects.Add(axeMan);
         }
-        game.GameObjects.Add(new Player { Position = (100, 100, 0), Velocity = (0, 0, 0) });
+
+        for (int i = 0; i < 100; i++)
+        {
+            var slime = new Slime
+            {
+                Position = (game.Rand.NextDouble(), game.Rand.NextDouble(), game.Rand.NextDouble()) * maxPos
+            };
+            game.GameObjects.Add(slime);
+        }
+        game.GameObjects.Add(new Player { Position = (100, 100, 0) });
 
         game.Run();
     }
@@ -71,7 +86,7 @@ class Game(int seed)
     public Random Rand = new Random(seed);
 
     public List<GameObject> GameObjects = new();
-    (int X, int Y) windowSize = (1200, 800);
+    (int X, int Y) windowSize = (Program.WINDOW_X, Program.WINDOW_Y);
 
     public KeyState KeyState = new();
 
@@ -151,8 +166,9 @@ class Game(int seed)
                 else if (gameObject is Slime) { color = 0x00FF00; }
                 else { color = 0xFF00FF; }
 
-
-                var rect = new SDL.SDL_Rect { x = (int)gameObject.Position.X, y = (int)gameObject.Position.Y, w = 50, h = 50 };
+                Vec3D size = (15, 15, 0);
+                size += size * (1 + gameObject.Position.Z) / 15;
+                var rect = new SDL.SDL_Rect { x = (int)gameObject.Position.X, y = (int)gameObject.Position.Y, w = (int)size.X, h = (int)size.Y };
                 SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect, color));
             }
 
@@ -177,8 +193,8 @@ abstract class GameObject
 
         Velocity *= Math.Pow(0.996, game.DeltaTime); // drag
 
-        if (Position.Z > 0)
-            Velocity.Z += -0.9 * game.DeltaTime; // gravity
+        if (Position.Z > 0) Velocity.Z += -0.00009 * game.DeltaTime; // gravity
+        else Position.Z = Velocity.Z = 0; // hitting the ground
     }
 }
 
@@ -192,7 +208,6 @@ class Player : GameObject
         if (game.KeyState.Left > 0) Velocity.X -= speed;
         if (game.KeyState.Down > 0) Velocity.Y += speed;
         if (game.KeyState.Up > 0) Velocity.Y -= speed;
-
 
         base.Update(game);
     }
@@ -215,8 +230,7 @@ class AxeMan : Enemy
         // track player
         double speed = 0.01;
         var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? (0.0, 0.0, 0.0);
-        Velocity = (playerPos - Position).Norm() * speed * game.DeltaTime;
-
+        Velocity = (playerPos - Position).Norm() * speed;
 
         base.Update(game);
     }
@@ -224,13 +238,11 @@ class AxeMan : Enemy
 
 class Slime : Enemy
 {
-    public double Jump;
+    public double Jump = 0.1;
 
     public override void Update(Game game)
     {
-        //jump
-        if (Position.Z == 0)
-            Velocity.Z += Jump;
+        if (Position.Z == 0 && game.Rand.Next() % 100 < 1) Velocity.Z += Jump;
 
         base.Update(game);
     }
