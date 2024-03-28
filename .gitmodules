@@ -1,0 +1,6 @@
+[submodule "main"]
+	path = main
+	url = https://github.com/flibitijibibo/SDL2-CS.git
+[submodule "SDL2-CS"]
+	path = SDL2-CS
+	url = https://github.com/flibitijibibo/SDL2-CS.git

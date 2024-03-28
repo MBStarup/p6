@@ -1,4 +1,12 @@
-﻿using System.Linq;
+﻿#define RENDERING
+#define INPUT
+
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using CircularBuffer;
+using SDL2;
+
 
 class Program
 {
@@ -7,18 +15,29 @@ class Program
         Game game = new(69420);
 
         // setup the "scene"
-        Vec3D maxPos = (10.0, 10.0, 1.0);
+        Vec3D maxPos = (100, 100, 1);
         for (int i = 0; i < 100; i++)
         {
-            var slime = new Slime
+            var axeMan = new AxeMan
             {
-                Position = (game.Rand.NextDouble() % maxPos.X, game.Rand.NextDouble() % maxPos.Y, game.Rand.NextDouble() % maxPos.Z)
+                Position = (game.Rand.NextDouble(), game.Rand.NextDouble(), game.Rand.NextDouble()) * maxPos,
+                Velocity = (0, 0, 0)
             };
-            game.GameObjects.Add(slime);
+            game.GameObjects.Add(axeMan);
         }
+        game.GameObjects.Add(new Player { Position = (100, 100, 0), Velocity = (0, 0, 0) });
 
         game.Run();
     }
+}
+
+class KeyState
+{
+    public uint Up;
+    public uint Down;
+    public uint Left;
+    public uint Right;
+    public uint Close;
 }
 
 struct Vec3D(double x, double y, double z)
@@ -27,15 +46,23 @@ struct Vec3D(double x, double y, double z)
     public double Y = y;
     public double Z = z;
 
-    public static implicit operator Vec3D((double X, double Y, double Z) v) => new(v.X, v.Y, v.Z);
-    public static Vec3D operator -(Vec3D v) => new(-v.X, -v.Y, -v.Z);
-    public static Vec3D operator +(Vec3D v1, Vec3D v2) => new(v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z);
-    public static Vec3D operator -(Vec3D v1, Vec3D v2) => new(v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
-    public static Vec3D operator *(Vec3D v1, Vec3D v2) => new(v1.X * v2.X, v1.Y * v2.Y, v1.Z * v2.Z);
-    public static Vec3D operator /(Vec3D v1, Vec3D v2) => new(v1.X / v2.X, v1.Y / v2.Y, v1.Z / v2.Z);
-    public static Vec3D operator *(Vec3D v, double x) => new(v.X * x, v.Y * x, v.Z * x);
-    public static Vec3D operator /(Vec3D v, double x) => new(v.X / x, v.Y / x, v.Z / x);
+    public override string ToString()
+    {
+        return $"({X}, {Y}, {Z})";
+    }
 
+    public static implicit operator Vec3D((double X, double Y, double Z) v) => new(v.X, v.Y, v.Z);
+    public static Vec3D operator -(Vec3D v) => (-v.X, -v.Y, -v.Z);
+    public static Vec3D operator +(Vec3D v1, Vec3D v2) => (v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z);
+    public static Vec3D operator -(Vec3D v1, Vec3D v2) => (v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
+    public static Vec3D operator *(Vec3D v1, Vec3D v2) => (v1.X * v2.X, v1.Y * v2.Y, v1.Z * v2.Z);
+    public static Vec3D operator /(Vec3D v1, Vec3D v2) => (v1.X / v2.X, v1.Y / v2.Y, v1.Z / v2.Z);
+    public static Vec3D operator *(Vec3D v, double x) => (v.X * x, v.Y * x, v.Z * x);
+    public static Vec3D operator /(Vec3D v, double x) => (v.X / x, v.Y / x, v.Z / x);
+
+    public readonly Vec3D Norm() => this / Abs();
+    public readonly double Abs() => Math.Sqrt(Abs2());
+    public readonly double Abs2() => Math.Pow(X, 2) + Math.Pow(Y, 2) + Math.Pow(Z, 2);
 }
 
 class Game(int seed)
@@ -44,18 +71,67 @@ class Game(int seed)
     public Random Rand = new Random(seed);
 
     public List<GameObject> GameObjects = new();
+    (int X, int Y) windowSize = (1200, 800);
+
+    public KeyState KeyState = new();
+
     public void Run()
     {
-        var watch = System.Diagnostics.Stopwatch.StartNew();
+#if RENDERING
+        static void SDL_Assert(nint err_code) { Trace.Assert(err_code == 0, $"SDL Error: {SDL.SDL_GetError()}"); }
+
+        SDL_Assert(SDL.SDL_Init(SDL.SDL_INIT_VIDEO));
+
+        var window = SDL.SDL_CreateWindow(
+                "hello_sdl2",
+                SDL.SDL_WINDOWPOS_UNDEFINED, SDL.SDL_WINDOWPOS_UNDEFINED,
+                windowSize.X, windowSize.Y,
+                SDL.SDL_WindowFlags.SDL_WINDOW_SHOWN
+                );
+        Trace.Assert(window != 0, "Failed to create window");
+
+
+        var screenSurface = SDL.SDL_GetWindowSurface(window);
+#endif
+
+        var watch = Stopwatch.StartNew();
+        var frameTimeBuffer = new CircularBuffer<double>(100);
         while (true)
         {
             // the code that you want to measure comes here
-            //inputs
-            // no-op
+#if INPUT
+            while (SDL.SDL_PollEvent(out SDL.SDL_Event e) != 0)
+            {
+                if (e.type == SDL.SDL_EventType.SDL_KEYDOWN)
+                {
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_d) KeyState.Right += 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_a) KeyState.Left += 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_w) KeyState.Up += 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s) KeyState.Down += 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close += 1;
+                }
 
-            watch.Stop();
-            DeltaTime = watch.ElapsedMilliseconds;
+                if (e.type == SDL.SDL_EventType.SDL_KEYUP)
+                {
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_d) KeyState.Right = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_a) KeyState.Left = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_w) KeyState.Up = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s) KeyState.Down = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close = 0;
+                }
+
+            }
+
+            if (KeyState.Close > 0) Environment.Exit(0);
+#endif
+
+            // watch.Stop();
+            DeltaTime = Math.Clamp(((double)watch.ElapsedTicks / (double)Stopwatch.Frequency) * 1000, double.MinValue, 1000 / 60);
             watch.Restart();
+            if (DeltaTime < 1.0) System.Console.WriteLine($"Small frame {DeltaTime} ms");
+            frameTimeBuffer.PushBack(DeltaTime);
+            SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
+            // System.Console.WriteLine($"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
             //update 
             foreach (var gameObject in GameObjects)
             {
@@ -63,7 +139,30 @@ class Game(int seed)
             }
 
             //render
-            // no-op
+#if RENDERING
+            var bgRect = new SDL.SDL_Rect { x = 0, y = 0, w = windowSize.X, h = windowSize.Y };
+            SDL_Assert(SDL.SDL_FillRect(screenSurface, ref bgRect, 0x111111));
+            foreach (var gameObject in GameObjects)
+            {
+                uint color;
+
+                if (gameObject is Player) { color = 0x00FFFF; }
+                else if (gameObject is AxeMan) { color = 0xFF0000; }
+                else if (gameObject is Slime) { color = 0x00FF00; }
+                else { color = 0xFF00FF; }
+
+
+                var rect = new SDL.SDL_Rect { x = (int)gameObject.Position.X, y = (int)gameObject.Position.Y, w = 50, h = 50 };
+                SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect, color));
+            }
+
+            var rect2 = new SDL.SDL_Rect { x = 10, y = 10, w = 10, h = 10 };
+            SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect2, 0xFFFFFF));
+
+            SDL_Assert(SDL.SDL_UpdateWindowSurface(window));
+#endif
+
+            // Thread.Sleep((int)Math.Max(1_000.0 / 60.0 - DeltaTime, 0.0));
         }
     }
 }
@@ -76,9 +175,7 @@ abstract class GameObject
     {
         Position += Velocity * game.DeltaTime;
 
-        Velocity.X *= 0.1 * game.DeltaTime; // drag
-        Velocity.Y *= 0.1 * game.DeltaTime; // drag
-        Velocity.Z *= 0.1 * game.DeltaTime; // drag
+        Velocity *= Math.Pow(0.996, game.DeltaTime); // drag
 
         if (Position.Z > 0)
             Velocity.Z += -0.9 * game.DeltaTime; // gravity
@@ -87,7 +184,18 @@ abstract class GameObject
 
 class Player : GameObject
 {
-    // TODO
+    public override void Update(Game game)
+    {
+        var speed = 0.005;
+
+        if (game.KeyState.Right > 0) Velocity.X += speed;
+        if (game.KeyState.Left > 0) Velocity.X -= speed;
+        if (game.KeyState.Down > 0) Velocity.Y += speed;
+        if (game.KeyState.Up > 0) Velocity.Y -= speed;
+
+
+        base.Update(game);
+    }
 }
 
 abstract class NPC : GameObject
@@ -105,8 +213,9 @@ class AxeMan : Enemy
     public override void Update(Game game)
     {
         // track player
+        double speed = 0.01;
         var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? (0.0, 0.0, 0.0);
-
+        Velocity = (playerPos - Position).Norm() * speed * game.DeltaTime;
 
 
         base.Update(game);
