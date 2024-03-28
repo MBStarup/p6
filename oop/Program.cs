@@ -1,11 +1,9 @@
 ﻿#define RENDERING
 #define INPUT
 
-
-
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Mail;
+using System.Numerics;
 using CircularBuffer;
 using SDL2;
 
@@ -22,7 +20,7 @@ static class Program
         Game game = new(69420);
 
         // setup the "scene"
-        Vec3D maxPos = (Program.WINDOW_X, Program.WINDOW_Y, 0);
+        Vec3D<double> maxPos = (Program.WINDOW_X, Program.WINDOW_Y, 0);
         for (int i = 0; i < 100; i++)
         {
             var axeMan = new AxeMan
@@ -55,29 +53,49 @@ class KeyState
     public uint Close;
 }
 
-struct Vec3D(double x, double y, double z)
+struct Vec2D<T>(T x, T y) where T : INumber<T>
 {
-    public double X = x;
-    public double Y = y;
-    public double Z = z;
+    public T X = x;
+    public T Y = y;
 
-    public override string ToString()
-    {
-        return $"({X}, {Y}, {Z})";
-    }
+    public override readonly string ToString() => $"({X}, {Y})";
 
-    public static implicit operator Vec3D((double X, double Y, double Z) v) => new(v.X, v.Y, v.Z);
-    public static Vec3D operator -(Vec3D v) => (-v.X, -v.Y, -v.Z);
-    public static Vec3D operator +(Vec3D v1, Vec3D v2) => (v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z);
-    public static Vec3D operator -(Vec3D v1, Vec3D v2) => (v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
-    public static Vec3D operator *(Vec3D v1, Vec3D v2) => (v1.X * v2.X, v1.Y * v2.Y, v1.Z * v2.Z);
-    public static Vec3D operator /(Vec3D v1, Vec3D v2) => (v1.X / v2.X, v1.Y / v2.Y, v1.Z / v2.Z);
-    public static Vec3D operator *(Vec3D v, double x) => (v.X * x, v.Y * x, v.Z * x);
-    public static Vec3D operator /(Vec3D v, double x) => (v.X / x, v.Y / x, v.Z / x);
+    public static implicit operator Vec2D<T>((T X, T Y) v) => new(v.X, v.Y);
+    public static implicit operator Vec3D<T>(Vec2D<T> v) => (v.X, v.Y, T.Zero);
+    public static Vec2D<T> operator -(Vec2D<T> v) => (-v.X, -v.Y);
+    public static Vec2D<T> operator +(Vec2D<T> v1, Vec2D<T> v2) => (v1.X + v2.X, v1.Y + v2.Y);
+    public static Vec2D<T> operator -(Vec2D<T> v1, Vec2D<T> v2) => (v1.X - v2.X, v1.Y - v2.Y);
+    public static Vec2D<T> operator *(Vec2D<T> v1, Vec2D<T> v2) => (v1.X * v2.X, v1.Y * v2.Y);
+    public static Vec2D<T> operator /(Vec2D<T> v1, Vec2D<T> v2) => (v1.X / v2.X, v1.Y / v2.Y);
+    public static Vec2D<T> operator *(Vec2D<T> v, T x) => (v.X * x, v.Y * x);
+    public static Vec2D<T> operator /(Vec2D<T> v, T x) => (v.X / x, v.Y / x);
 
-    public readonly Vec3D Norm() => this / Abs();
-    public readonly double Abs() => Math.Sqrt(Abs2());
-    public readonly double Abs2() => Math.Pow(X, 2) + Math.Pow(Y, 2) + Math.Pow(Z, 2);
+    public readonly Vec2D<T> Norm() => this / Abs();
+    public readonly T Abs() => Math.Sqrt((dynamic)Abs2()); // cast to double, couldn't find an interface for that specifically
+    public readonly T Abs2() => Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2); // cast to double, couldn't find an interface for that specifically
+}
+
+struct Vec3D<T>(T x, T y, T z) where T : INumber<T>
+{
+    public T X = x;
+    public T Y = y;
+    public T Z = z;
+
+    public override readonly string ToString() => $"({X}, {Y}, {Z})";
+
+    public static implicit operator Vec3D<T>((T X, T Y, T Z) v) => new(v.X, v.Y, v.Z);
+    public static implicit operator Vec2D<T>(Vec3D<T> v) => new(v.X, v.Y);
+    public static Vec3D<T> operator -(Vec3D<T> v) => (-v.X, -v.Y, -v.Z);
+    public static Vec3D<T> operator +(Vec3D<T> v1, Vec3D<T> v2) => (v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z);
+    public static Vec3D<T> operator -(Vec3D<T> v1, Vec3D<T> v2) => (v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
+    public static Vec3D<T> operator *(Vec3D<T> v1, Vec3D<T> v2) => (v1.X * v2.X, v1.Y * v2.Y, v1.Z * v2.Z);
+    public static Vec3D<T> operator /(Vec3D<T> v1, Vec3D<T> v2) => (v1.X / v2.X, v1.Y / v2.Y, v1.Z / v2.Z);
+    public static Vec3D<T> operator *(Vec3D<T> v, T x) => (v.X * x, v.Y * x, v.Z * x);
+    public static Vec3D<T> operator /(Vec3D<T> v, T x) => (v.X / x, v.Y / x, v.Z / x);
+
+    public readonly Vec3D<T> Norm() => this / Abs();
+    public readonly T Abs() => Math.Sqrt((dynamic)Abs2()); // cast to double, couldn't find an interface for that specifically
+    public readonly T Abs2() => Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2) + Math.Pow((dynamic)Z, 2); // cast to double, couldn't find an interface for that specifically
 }
 
 class Game(int seed)
@@ -159,17 +177,10 @@ class Game(int seed)
             SDL_Assert(SDL.SDL_FillRect(screenSurface, ref bgRect, 0x111111));
             foreach (var gameObject in GameObjects)
             {
-                uint color;
-
-                if (gameObject is Player) { color = 0x00FFFF; }
-                else if (gameObject is AxeMan) { color = 0xFF0000; }
-                else if (gameObject is Slime) { color = 0x00FF00; }
-                else { color = 0xFF00FF; }
-
-                Vec3D size = (15, 15, 0);
+                Vec2D<double> size = (15, 15);
                 size += size * (1 + gameObject.Position.Z) / 15;
                 var rect = new SDL.SDL_Rect { x = (int)gameObject.Position.X, y = (int)gameObject.Position.Y, w = (int)size.X, h = (int)size.Y };
-                SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect, color));
+                SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect, gameObject.Color));
             }
 
             var rect2 = new SDL.SDL_Rect { x = 10, y = 10, w = 10, h = 10 };
@@ -183,10 +194,28 @@ class Game(int seed)
     }
 }
 
-abstract class GameObject
+// interface IRenderable
+// {
+//     Vec3D<double> Position { get; set; }
+//     uint Color { get; set; }
+
+//     // Textures and whatnot
+// }
+
+// interface IPhysicsable
+// {
+//     Vec3D<double> Position { get; set; }
+//     Vec3D<double> Velocity { get; set; }
+
+//     // collision boxes and whatnot
+// }
+
+abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer */
 {
-    public Vec3D Position;
-    public Vec3D Velocity;
+    public Vec3D<double> Position;
+    public Vec3D<double> Velocity;
+
+    public uint Color = 0xFF00FF;
     public virtual void Update(Game game)
     {
         Position += Velocity * game.DeltaTime;
@@ -225,6 +254,10 @@ abstract class Enemy : NPC
 
 class AxeMan : Enemy
 {
+    public AxeMan()
+    {
+        Color = 0xFF0000;
+    }
     public override void Update(Game game)
     {
         // track player
@@ -240,6 +273,10 @@ class Slime : Enemy
 {
     public double Jump = 0.1;
 
+    public Slime()
+    {
+        Color = 0x00FF00;
+    }
     public override void Update(Game game)
     {
         if (Position.Z == 0 && game.Rand.Next() % 100 < 1) Velocity.Z += Jump;
