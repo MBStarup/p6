@@ -6,6 +6,7 @@ using System.Linq;
 using System.Numerics;
 using CircularBuffer;
 using SDL2;
+using Items;
 
 
 static class Program
@@ -249,7 +250,7 @@ abstract class NPC : GameObject
 
 abstract class Enemy : NPC
 {
-    public List<LootItem> Loot;
+    public List<Item> Loot;
 }
 
 class AxeMan : Enemy
@@ -298,9 +299,5 @@ class QuestGiver : FriendlyNPC
 }
 
 public class Quest
-{
-}
-
-public class LootItem
 {
 }
