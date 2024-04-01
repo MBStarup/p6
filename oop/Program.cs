@@ -230,6 +230,8 @@ abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer 
 
 class Player : GameObject
 {
+    public int HP;
+    public List<Weapon> weapons;
     public override void Update(Game game)
     {
         var speed = 0.005;
