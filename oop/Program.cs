@@ -99,6 +99,25 @@ struct Vec3D<T>(T x, T y, T z) where T : INumber<T>
     public readonly T Abs2() => Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2) + Math.Pow((dynamic)Z, 2); // cast to double, couldn't find an interface for that specifically
 }
 
+struct Rect<T>(T x, T y, T width, T height) where T : INumber<T>
+{
+    public T X = x;
+    public T Y = y;
+    public T Width = width;
+    public T Height = height;
+
+    public Vec2D<T> Center { get => (X, Y); }
+
+    public bool Overlaps(Rect<T> other)
+    {
+        return
+               ((X >= other.X && X < other.X + other.Width)                     // leftmost point within other
+            || (X + Width >= other.X && X + Width < other.X + other.Width))     // rightmost point within other
+            && ((Y >= other.Y && Y < other.Y + other.Height)                    // bottommost point within other
+            || (Y + Height >= other.Y && Y + Height < other.Y + other.Height)); // topmost point within other
+    }
+}
+
 class Game(int seed)
 {
     public double DeltaTime;
@@ -178,10 +197,20 @@ class Game(int seed)
             SDL_Assert(SDL.SDL_FillRect(screenSurface, ref bgRect, 0x111111));
             foreach (var gameObject in GameObjects)
             {
-                Vec2D<double> size = (15, 15);
-                size += size * (1 + gameObject.Position.Z) / 15;
-                var rect = new SDL.SDL_Rect { x = (int)gameObject.Position.X, y = (int)gameObject.Position.Y, w = (int)size.X, h = (int)size.Y };
-                SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect, gameObject.Color));
+                var color = gameObject.Color;
+                // Vec2D<double> size = (15, 15);
+                // size += size * (1 + gameObject.Position.Z) / 15;
+                // var rect = new SDL.SDL_Rect { x = (int)gameObject.Position.X, y = (int)gameObject.Position.Y, w = (int)size.X, h = (int)size.Y };
+                var rect = new SDL.SDL_Rect { x = (int)gameObject.BoundingBox.X, y = (int)gameObject.BoundingBox.Y, w = (int)gameObject.BoundingBox.Width, h = (int)gameObject.BoundingBox.Height };
+                foreach (var other in GameObjects)
+                {
+                    while (gameObject != other && gameObject.BoundingBox.Overlaps(other.BoundingBox))
+                    {
+                        var direction = (gameObject.BoundingBox.Center - other.BoundingBox.Center).Norm();
+                        gameObject.Position += new Vec3D<double>(direction.X, direction.Y, 0) * 0.1f;
+                    }
+                }
+                SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect, color));
             }
 
             var rect2 = new SDL.SDL_Rect { x = 10, y = 10, w = 10, h = 10 };
@@ -217,6 +246,9 @@ abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer 
     public Vec3D<double> Velocity;
 
     public uint Color = 0xFF00FF;
+
+    public Rect<double> BoundingBox { get => new(Position.X, Position.Y, 25, 25); }
+
     public virtual void Update(Game game)
     {
         Position += Velocity * game.DeltaTime;
