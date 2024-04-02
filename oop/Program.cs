@@ -190,7 +190,13 @@ class Game(int seed)
             foreach (var gameObject in GameObjects)
             {
                 gameObject.Update(this);
+                Projectile? projectile = gameObject as Projectile;
+                if(projectile != null)
+                {
+                    projectile.CheckProjectileCollision(GameObjects);
+                }
             }
+
 
             //render
 #if RENDERING
@@ -335,4 +341,27 @@ class QuestGiver : FriendlyNPC
 
 public class Quest
 {
+}
+
+class Projectile : GameObject
+{
+    public Vec2D<double> origin;
+    public double range;
+    public void CheckProjectileCollision(List<GameObject> gameObjects)
+    {
+        foreach (var other in gameObjects)
+        {
+            if (this != other && this.BoundingBox.Overlaps(other.BoundingBox))
+            {
+
+                gameObjects.Remove(this);
+            }
+        }
+        // Implement distance check from origin to check if projectile has travelled max distance
+    }
+}
+
+class Arrow : Projectile
+{
+
 }
