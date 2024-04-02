@@ -21,12 +21,12 @@ static class Program
         Game game = new(69420);
 
         // setup the "scene"
-        Vec3D<double> maxPos = (Program.WINDOW_X, Program.WINDOW_Y, 0);
+        Vector3 maxPos = new(Program.WINDOW_X, Program.WINDOW_Y, 0);
         for (int i = 0; i < 100; i++)
         {
             var axeMan = new AxeMan
             {
-                Position = (game.Rand.NextDouble(), game.Rand.NextDouble(), game.Rand.NextDouble()) * maxPos
+                Position = new Vector3((float)game.Rand.NextDouble(), (float)game.Rand.NextDouble(), (float)game.Rand.NextDouble()) * maxPos
             };
             game.GameObjects.Add(axeMan);
         }
@@ -35,11 +35,11 @@ static class Program
         {
             var slime = new Slime
             {
-                Position = (game.Rand.NextDouble(), game.Rand.NextDouble(), game.Rand.NextDouble()) * maxPos
+                Position = new Vector3((float)game.Rand.NextDouble(), (float)game.Rand.NextDouble(), (float)game.Rand.NextDouble()) * maxPos
             };
             game.GameObjects.Add(slime);
         }
-        game.GameObjects.Add(new Player { Position = (100, 100, 0) });
+        game.GameObjects.Add(new Player { Position = new Vector3(100, 100, 0) });
 
         game.Run();
     }
@@ -53,62 +53,16 @@ class KeyState
     public uint Right;
     public uint Close;
 }
-
-struct Vec2D<T>(T x, T y) where T : INumber<T>
+struct Rect(float x, float y, float width, float height)
 {
-    public T X = x;
-    public T Y = y;
+    public float X = x;
+    public float Y = y;
+    public float Width = width;
+    public float Height = height;
 
-    public override readonly string ToString() => $"({X}, {Y})";
+    public Vector2 Center { get => new(X, Y); }
 
-    public static implicit operator Vec2D<T>((T X, T Y) v) => new(v.X, v.Y);
-    public static implicit operator Vec3D<T>(Vec2D<T> v) => (v.X, v.Y, T.Zero);
-    public static Vec2D<T> operator -(Vec2D<T> v) => (-v.X, -v.Y);
-    public static Vec2D<T> operator +(Vec2D<T> v1, Vec2D<T> v2) => (v1.X + v2.X, v1.Y + v2.Y);
-    public static Vec2D<T> operator -(Vec2D<T> v1, Vec2D<T> v2) => (v1.X - v2.X, v1.Y - v2.Y);
-    public static Vec2D<T> operator *(Vec2D<T> v1, Vec2D<T> v2) => (v1.X * v2.X, v1.Y * v2.Y);
-    public static Vec2D<T> operator /(Vec2D<T> v1, Vec2D<T> v2) => (v1.X / v2.X, v1.Y / v2.Y);
-    public static Vec2D<T> operator *(Vec2D<T> v, T x) => (v.X * x, v.Y * x);
-    public static Vec2D<T> operator /(Vec2D<T> v, T x) => (v.X / x, v.Y / x);
-
-    public readonly Vec2D<T> Norm() => this / Abs();
-    public readonly T Abs() => (dynamic)Math.Sqrt((dynamic)Abs2()); // cast to double, couldn't find an interface for that specifically
-    public readonly T Abs2() => (dynamic)Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2); // cast to double, couldn't find an interface for that specifically
-}
-
-struct Vec3D<T>(T x, T y, T z) where T : INumber<T>
-{
-    public T X = x;
-    public T Y = y;
-    public T Z = z;
-
-    public override readonly string ToString() => $"({X}, {Y}, {Z})";
-
-    public static implicit operator Vec3D<T>((T X, T Y, T Z) v) => new(v.X, v.Y, v.Z);
-    public static implicit operator Vec2D<T>(Vec3D<T> v) => new(v.X, v.Y);
-    public static Vec3D<T> operator -(Vec3D<T> v) => (-v.X, -v.Y, -v.Z);
-    public static Vec3D<T> operator +(Vec3D<T> v1, Vec3D<T> v2) => (v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z);
-    public static Vec3D<T> operator -(Vec3D<T> v1, Vec3D<T> v2) => (v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
-    public static Vec3D<T> operator *(Vec3D<T> v1, Vec3D<T> v2) => (v1.X * v2.X, v1.Y * v2.Y, v1.Z * v2.Z);
-    public static Vec3D<T> operator /(Vec3D<T> v1, Vec3D<T> v2) => (v1.X / v2.X, v1.Y / v2.Y, v1.Z / v2.Z);
-    public static Vec3D<T> operator *(Vec3D<T> v, T x) => (v.X * x, v.Y * x, v.Z * x);
-    public static Vec3D<T> operator /(Vec3D<T> v, T x) => (v.X / x, v.Y / x, v.Z / x);
-
-    public readonly Vec3D<T> Norm() => this / Abs();
-    public readonly T Abs() => (dynamic)Math.Sqrt((dynamic)Abs2()); // cast to double, couldn't find an interface for that specifically
-    public readonly T Abs2() => (dynamic)Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2) + Math.Pow((dynamic)Z, 2); // cast to double, couldn't find an interface for that specifically
-}
-
-struct Rect<T>(T x, T y, T width, T height) where T : INumber<T>
-{
-    public T X = x;
-    public T Y = y;
-    public T Width = width;
-    public T Height = height;
-
-    public Vec2D<T> Center { get => (X, Y); }
-
-    public bool Overlaps(Rect<T> other)
+    public bool Overlaps(Rect other)
     {
         return
                ((X >= other.X && X < other.X + other.Width)                     // leftmost point within other
@@ -118,26 +72,25 @@ struct Rect<T>(T x, T y, T width, T height) where T : INumber<T>
     }
 }
 
-struct Circle<T>(T x, T y, T r) where T : INumber<T>
+struct Circle(float x, float y, float r)
 {
-    public T X = x;
-    public T Y = y;
-    public T R = r;
+    public float X = x;
+    public float Y = y;
+    public float R = r;
 
-    public Vec2D<T> Center { get => (X, Y); }
-    public T Width { get => R + R; }
-    public T Height { get => R + R; }
+    public Vector2 Center { get => new Vector2(X, Y); }
+    public float Width { get => R + R; }
+    public float Height { get => R + R; }
 
-    public bool Overlaps(Circle<T> other)
+    public bool Overlaps(Circle other)
     {
-        return (dynamic)(Center - other.Center).Abs2() < Math.Pow((dynamic)(R + other.R), 2); //? Idk maybe making these have a generic T was a bit much LULE we should probably just use the System.Numerics.Vector2, thoughts?
+        return (Center - other.Center).LengthSquared() < Math.Pow((R + other.R), 2);
     }
-
 }
 
 class Game(int seed)
 {
-    public double DeltaTime;
+    public float DeltaTime;
     public Random Rand = new Random(seed);
 
     public List<GameObject> GameObjects = new();
@@ -165,7 +118,7 @@ class Game(int seed)
 #endif
 
         var watch = Stopwatch.StartNew();
-        var frameTimeBuffer = new CircularBuffer<double>(100);
+        var frameTimeBuffer = new CircularBuffer<float>(100);
         while (true)
         {
             // the code that you want to measure comes here
@@ -196,9 +149,9 @@ class Game(int seed)
 #endif
 
             // watch.Stop();
-            double realDeltaTime = ((double)watch.ElapsedTicks / (double)Stopwatch.Frequency) * 1000;
+            float realDeltaTime = ((float)watch.ElapsedTicks / (float)Stopwatch.Frequency) * 1000;
             watch.Restart();
-            DeltaTime = Math.Clamp(realDeltaTime, double.MinValue, 1000 / 60);
+            DeltaTime = Math.Clamp(realDeltaTime, float.MinValue, 1000 / 60);
             if (DeltaTime < 1.0) Console.WriteLine($"Small frame {DeltaTime} ms");
             frameTimeBuffer.PushBack(realDeltaTime);
             // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
@@ -222,7 +175,7 @@ class Game(int seed)
             foreach (var gameObject in GameObjects)
             {
                 var color = gameObject.Color;
-                // Vec2D<double> size = (15, 15);
+                // Vector2 size = (15, 15);
                 // size += size * (1 + gameObject.Position.Z) / 15;
                 // var rect = new SDL.SDL_Rect { x = (int)gameObject.Position.X, y = (int)gameObject.Position.Y, w = (int)size.X, h = (int)size.Y };
                 var rect = new SDL.SDL_Rect { x = (int)gameObject.Collider.X, y = (int)gameObject.Collider.Y, w = (int)gameObject.Collider.Width, h = (int)gameObject.Collider.Height };
@@ -230,8 +183,8 @@ class Game(int seed)
                 {
                     while (gameObject != other && gameObject.Collider.Overlaps(other.Collider))
                     {
-                        var direction = (gameObject.Collider.Center - other.Collider.Center).Norm();
-                        gameObject.Position += new Vec3D<double>(direction.X, direction.Y, 0) * 0.1f;
+                        var direction = Vector2.Normalize(gameObject.Collider.Center - other.Collider.Center);
+                        gameObject.Position += new Vector3(direction.X, direction.Y, 0) * 0.1f;
                     }
                 }
                 SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect, color));
@@ -250,7 +203,7 @@ class Game(int seed)
 
 // interface IRenderable
 // {
-//     Vec3D<double> Position { get; set; }
+//     Vector3 Position { get; set; }
 //     uint Color { get; set; }
 
 //     // Textures and whatnot
@@ -258,29 +211,29 @@ class Game(int seed)
 
 // interface IPhysicsable
 // {
-//     Vec3D<double> Position { get; set; }
-//     Vec3D<double> Velocity { get; set; }
+//     Vector3 Position { get; set; }
+//     Vector3 Velocity { get; set; }
 
 //     // collision boxes and whatnot
 // }
 
 abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer */
 {
-    public Vec3D<double> Position;
-    public Vec3D<double> Velocity;
+    public Vector3 Position;
+    public Vector3 Velocity;
 
     public uint Color = 0xFF00FF;
 
-    // public Rect<double> Collider { get => new(Position.X, Position.Y, 25, 25); }
-    public Circle<double> Collider { get => new(Position.X, Position.Y, 25); }
+    // public Rect<float> Collider { get => new(Position.X, Position.Y, 25, 25); }
+    public Circle Collider { get => new(Position.X, Position.Y, 25); }
 
     public virtual void Update(Game game)
     {
         Position += Velocity * game.DeltaTime;
 
-        Velocity *= Math.Pow(0.996, game.DeltaTime); // drag
+        Velocity *= MathF.Pow(0.996f, game.DeltaTime); // drag
 
-        if (Position.Z > 0) Velocity.Z += -0.00009 * game.DeltaTime; // gravity
+        if (Position.Z > 0) Velocity.Z += -0.00009f * game.DeltaTime; // gravity
         else Position.Z = Velocity.Z = 0; // hitting the ground
     }
 }
@@ -291,7 +244,7 @@ class Player : GameObject
     public List<Weapon> weapons;
     public override void Update(Game game)
     {
-        var speed = 0.005;
+        float speed = 0.005f;
 
         if (game.KeyState.Right > 0) Velocity.X += speed * game.DeltaTime;
         if (game.KeyState.Left > 0) Velocity.X -= speed * game.DeltaTime;
@@ -321,9 +274,9 @@ class AxeMan : Enemy
     public override void Update(Game game)
     {
         // track player
-        double speed = 0.01;
-        var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? (0.0, 0.0, 0.0);
-        Velocity = (playerPos - Position).Norm() * speed;
+        float speed = 0.01f;
+        var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? new(0.0f, 0.0f, 0.0f);
+        Velocity = Vector3.Normalize(playerPos - Position) * speed;
 
         base.Update(game);
     }
@@ -331,7 +284,7 @@ class AxeMan : Enemy
 
 class Slime : Enemy
 {
-    public double Jump = 0.1;
+    public float Jump = 0.1f;
 
     public Slime()
     {
@@ -363,8 +316,8 @@ public class Quest
 
 class Projectile : GameObject
 {
-    public Vec2D<double> origin;
-    public double range;
+    public Vector2 origin;
+    public float range;
     public void CheckProjectileCollision(List<GameObject> gameObjects)
     {
         foreach (var other in gameObjects)
