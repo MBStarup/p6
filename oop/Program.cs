@@ -179,12 +179,13 @@ class Game(int seed)
 #endif
 
             // watch.Stop();
-            DeltaTime = Math.Clamp(((double)watch.ElapsedTicks / (double)Stopwatch.Frequency) * 1000, double.MinValue, 1000 / 60);
+            double realDeltaTime = ((double)watch.ElapsedTicks / (double)Stopwatch.Frequency) * 1000;
             watch.Restart();
-            if (DeltaTime < 1.0) System.Console.WriteLine($"Small frame {DeltaTime} ms");
-            frameTimeBuffer.PushBack(DeltaTime);
-            SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
-            // System.Console.WriteLine($"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
+            DeltaTime = Math.Clamp(realDeltaTime, double.MinValue, 1000 / 60);
+            if (DeltaTime < 1.0) Console.WriteLine($"Small frame {DeltaTime} ms");
+            frameTimeBuffer.PushBack(realDeltaTime);
+            // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
+            SDL.SDL_SetWindowTitle(window, $"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
             //update 
             foreach (var gameObject in GameObjects)
             {
@@ -268,10 +269,10 @@ class Player : GameObject
     {
         var speed = 0.005;
 
-        if (game.KeyState.Right > 0) Velocity.X += speed;
-        if (game.KeyState.Left > 0) Velocity.X -= speed;
-        if (game.KeyState.Down > 0) Velocity.Y += speed;
-        if (game.KeyState.Up > 0) Velocity.Y -= speed;
+        if (game.KeyState.Right > 0) Velocity.X += speed * game.DeltaTime;
+        if (game.KeyState.Left > 0) Velocity.X -= speed * game.DeltaTime;
+        if (game.KeyState.Down > 0) Velocity.Y += speed * game.DeltaTime;
+        if (game.KeyState.Up > 0) Velocity.Y -= speed * game.DeltaTime;
 
         base.Update(game);
     }

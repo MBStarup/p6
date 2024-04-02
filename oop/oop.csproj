@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <Reference Include="..\SDL2-CS\bin\Release\SDL2-CS.dll" />
+    <Reference Include="..\SDL2-CS\bin\Release\net7.0\publish\SDL2-CS.dll" />
   </ItemGroup>
 
   <PropertyGroup>
