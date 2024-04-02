@@ -72,8 +72,8 @@ struct Vec2D<T>(T x, T y) where T : INumber<T>
     public static Vec2D<T> operator /(Vec2D<T> v, T x) => (v.X / x, v.Y / x);
 
     public readonly Vec2D<T> Norm() => this / Abs();
-    public readonly T Abs() => Math.Sqrt((dynamic)Abs2()); // cast to double, couldn't find an interface for that specifically
-    public readonly T Abs2() => Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2); // cast to double, couldn't find an interface for that specifically
+    public readonly T Abs() => (dynamic)Math.Sqrt((dynamic)Abs2()); // cast to double, couldn't find an interface for that specifically
+    public readonly T Abs2() => (dynamic)Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2); // cast to double, couldn't find an interface for that specifically
 }
 
 struct Vec3D<T>(T x, T y, T z) where T : INumber<T>
@@ -95,8 +95,8 @@ struct Vec3D<T>(T x, T y, T z) where T : INumber<T>
     public static Vec3D<T> operator /(Vec3D<T> v, T x) => (v.X / x, v.Y / x, v.Z / x);
 
     public readonly Vec3D<T> Norm() => this / Abs();
-    public readonly T Abs() => Math.Sqrt((dynamic)Abs2()); // cast to double, couldn't find an interface for that specifically
-    public readonly T Abs2() => Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2) + Math.Pow((dynamic)Z, 2); // cast to double, couldn't find an interface for that specifically
+    public readonly T Abs() => (dynamic)Math.Sqrt((dynamic)Abs2()); // cast to double, couldn't find an interface for that specifically
+    public readonly T Abs2() => (dynamic)Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2) + Math.Pow((dynamic)Z, 2); // cast to double, couldn't find an interface for that specifically
 }
 
 struct Rect<T>(T x, T y, T width, T height) where T : INumber<T>
@@ -116,6 +116,23 @@ struct Rect<T>(T x, T y, T width, T height) where T : INumber<T>
             && ((Y >= other.Y && Y < other.Y + other.Height)                    // bottommost point within other
             || (Y + Height >= other.Y && Y + Height < other.Y + other.Height)); // topmost point within other
     }
+}
+
+struct Circle<T>(T x, T y, T r) where T : INumber<T>
+{
+    public T X = x;
+    public T Y = y;
+    public T R = r;
+
+    public Vec2D<T> Center { get => (X, Y); }
+    public T Width { get => R + R; }
+    public T Height { get => R + R; }
+
+    public bool Overlaps(Circle<T> other)
+    {
+        return (dynamic)(Center - other.Center).Abs2() < Math.Pow((dynamic)(R + other.R), 2); //? Idk maybe making these have a generic T was a bit much LULE we should probably just use the System.Numerics.Vector2, thoughts?
+    }
+
 }
 
 class Game(int seed)
@@ -191,7 +208,7 @@ class Game(int seed)
             {
                 gameObject.Update(this);
                 Projectile? projectile = gameObject as Projectile;
-                if(projectile != null)
+                if (projectile != null)
                 {
                     projectile.CheckProjectileCollision(GameObjects);
                 }
@@ -208,12 +225,12 @@ class Game(int seed)
                 // Vec2D<double> size = (15, 15);
                 // size += size * (1 + gameObject.Position.Z) / 15;
                 // var rect = new SDL.SDL_Rect { x = (int)gameObject.Position.X, y = (int)gameObject.Position.Y, w = (int)size.X, h = (int)size.Y };
-                var rect = new SDL.SDL_Rect { x = (int)gameObject.BoundingBox.X, y = (int)gameObject.BoundingBox.Y, w = (int)gameObject.BoundingBox.Width, h = (int)gameObject.BoundingBox.Height };
+                var rect = new SDL.SDL_Rect { x = (int)gameObject.Collider.X, y = (int)gameObject.Collider.Y, w = (int)gameObject.Collider.Width, h = (int)gameObject.Collider.Height };
                 foreach (var other in GameObjects)
                 {
-                    while (gameObject != other && gameObject.BoundingBox.Overlaps(other.BoundingBox))
+                    while (gameObject != other && gameObject.Collider.Overlaps(other.Collider))
                     {
-                        var direction = (gameObject.BoundingBox.Center - other.BoundingBox.Center).Norm();
+                        var direction = (gameObject.Collider.Center - other.Collider.Center).Norm();
                         gameObject.Position += new Vec3D<double>(direction.X, direction.Y, 0) * 0.1f;
                     }
                 }
@@ -254,7 +271,8 @@ abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer 
 
     public uint Color = 0xFF00FF;
 
-    public Rect<double> BoundingBox { get => new(Position.X, Position.Y, 25, 25); }
+    // public Rect<double> Collider { get => new(Position.X, Position.Y, 25, 25); }
+    public Circle<double> Collider { get => new(Position.X, Position.Y, 25); }
 
     public virtual void Update(Game game)
     {
@@ -351,7 +369,7 @@ class Projectile : GameObject
     {
         foreach (var other in gameObjects)
         {
-            if (this != other && this.BoundingBox.Overlaps(other.BoundingBox))
+            if (this != other && this.Collider.Overlaps(other.Collider))
             {
 
                 gameObjects.Remove(this);
