@@ -8,18 +8,20 @@ abstract class Item
 
 abstract class Weapon : Item
 {
-    
-    abstract public int Range { get;}
 
-    abstract public int Damage { get;}
+    abstract public int Range { get; }
 
-    public virtual void Attack(NPC npc){
+    abstract public int Damage { get; }
+
+    public virtual void Attack(NPC npc)
+    {
         npc.HP -= Damage;
     }
     public override void OnPickup(Player player)
     {
-        if(player.weapons.All(weapon => weapon.GetType() != GetType())){
-            player.weapons.Add(this);
+        if (player.Weapons.All(weapon => weapon.GetType() != GetType()))
+        {
+            player.Weapons.Add(this);
         }
     }
 }
@@ -39,7 +41,8 @@ class Bow : Weapon
     public override int Damage => 3;
     public override void Attack(NPC npc)
     {
-        if(arrows>0){
+        if (arrows > 0)
+        {
             base.Attack(npc);
         }
     }
@@ -52,7 +55,8 @@ class Crossbow : Weapon
     public override int Damage => 10;
     public override void Attack(NPC npc)
     {
-        if(bolts>0){
+        if (bolts > 0)
+        {
             base.Attack(npc);
         }
     }

@@ -21,12 +21,12 @@ static class Program
         Game game = new(69420);
 
         // setup the "scene"
-        Vector3 maxPos = new(Program.WINDOW_X, Program.WINDOW_Y, 0);
+        Vector2 maxPos = new(Program.WINDOW_X, Program.WINDOW_Y);
         for (int i = 0; i < 100; i++)
         {
             var axeMan = new AxeMan
             {
-                Position = new Vector3((float)game.Rand.NextDouble(), (float)game.Rand.NextDouble(), (float)game.Rand.NextDouble()) * maxPos
+                Position = new Vector2((float)game.Rand.NextDouble(), (float)game.Rand.NextDouble()) * maxPos
             };
             game.GameObjects.Add(axeMan);
         }
@@ -35,11 +35,11 @@ static class Program
         {
             var slime = new Slime
             {
-                Position = new Vector3((float)game.Rand.NextDouble(), (float)game.Rand.NextDouble(), (float)game.Rand.NextDouble()) * maxPos
+                Position = new Vector2((float)game.Rand.NextDouble(), (float)game.Rand.NextDouble()) * maxPos
             };
             game.GameObjects.Add(slime);
         }
-        game.GameObjects.Add(new Player { Position = new Vector3(100, 100, 0) });
+        game.GameObjects.Add(new Player { Position = new Vector2(100, 100) });
 
         game.Run();
     }
@@ -52,6 +52,8 @@ class KeyState
     public uint Left;
     public uint Right;
     public uint Close;
+
+    public int Shoot;
 }
 struct Rect(float x, float y, float width, float height)
 {
@@ -149,10 +151,7 @@ struct Circle(float x, float y, float r)
 static class SDLTools
 {
     public static void Assert(nint err_code) => Trace.Assert(err_code == 0, $"SDL Error: {SDL.SDL_GetError()}");
-    public static int SetRenderDrawColor(nint renderer, uint color)
-    {
-        return SDL.SDL_SetRenderDrawColor(renderer, (byte)(color >> 16), (byte)(color >> 8), (byte)(color >> 0), (byte)(color >> 24));
-    }
+    public static int SetRenderDrawColor(nint renderer, uint color) => SDL.SDL_SetRenderDrawColor(renderer, (byte)(color >> 16), (byte)(color >> 8), (byte)(color >> 0), (byte)(color >> 24));
 }
 
 class Game(int seed)
@@ -161,6 +160,8 @@ class Game(int seed)
     public Random Rand = new Random(seed);
 
     public List<GameObject> GameObjects = new();
+    public List<GameObject> ToRemove = new();
+    public List<GameObject> ToSpawn = new();
     (int X, int Y) windowSize = (Program.WINDOW_X, Program.WINDOW_Y);
 
     public KeyState KeyState = new();
@@ -168,8 +169,6 @@ class Game(int seed)
     public void Run()
     {
 #if RENDERING
-
-
         SDLTools.Assert(SDL.SDL_Init(SDL.SDL_INIT_VIDEO));
 
         var window = SDL.SDL_CreateWindow(
@@ -178,7 +177,7 @@ class Game(int seed)
                 windowSize.X, windowSize.Y,
                 SDL.SDL_WindowFlags.SDL_WINDOW_SHOWN
                 );
-        Trace.Assert(window != 0, "Failed to create window");
+        Trace.Assert(window != 0, $"Failed to create window: {SDL.SDL_GetError()}");
 
 
         // var screenSurface = SDL.SDL_GetWindowSurface(window);
@@ -201,6 +200,7 @@ class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_w) KeyState.Up += 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s) KeyState.Down += 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close += 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot += 1;
                 }
 
                 if (e.type == SDL.SDL_EventType.SDL_KEYUP)
@@ -210,6 +210,7 @@ class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_w) KeyState.Up = 0;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s) KeyState.Down = 0;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot = 0;
                 }
 
             }
@@ -226,14 +227,25 @@ class Game(int seed)
             //update 
             foreach (var gameObject in GameObjects)
             {
+                //update
                 gameObject.Update(this);
-                Projectile? projectile = gameObject as Projectile;
-                if (projectile != null)
+
+                foreach (var other in GameObjects)
                 {
-                    projectile.CheckProjectileCollision(GameObjects);
+                    if (gameObject != other && gameObject.Collider.Overlaps(other.Collider))
+                    {
+                        gameObject.OnCollision(this, other);
+                    }
                 }
             }
 
+            //remove stuff
+            GameObjects.RemoveAll(ToRemove.Contains);
+            ToRemove.Clear();
+
+            //spawn stuff
+            GameObjects.AddRange(ToSpawn);
+            ToSpawn.Clear();
 
             //render
 #if RENDERING
@@ -243,14 +255,7 @@ class Game(int seed)
             foreach (var gameObject in GameObjects)
             {
                 var color = gameObject.Color;
-                foreach (var other in GameObjects)
-                {
-                    while (gameObject != other && gameObject.Collider.Overlaps(other.Collider))
-                    {
-                        var direction = Vector2.Normalize(gameObject.Collider.Center - other.Collider.Center);
-                        gameObject.Position += new Vector3(direction.X, direction.Y, 0) * 0.1f;
-                    }
-                }
+
                 gameObject.Collider.Render(renderer, color);
             }
 
@@ -264,11 +269,14 @@ class Game(int seed)
             // Thread.Sleep((int)Math.Max(1_000.0 / 60.0 - DeltaTime, 0.0));
         }
     }
+
+    public void Remove(GameObject gameObject) => ToRemove.Add(gameObject);
+    public void Spawn(GameObject gameObject) => ToSpawn.Add(gameObject);
 }
 
 // interface IRenderable
 // {
-//     Vector3 Position { get; set; }
+//     Vector2 Position { get; set; }
 //     uint Color { get; set; }
 
 //     // Textures and whatnot
@@ -276,16 +284,16 @@ class Game(int seed)
 
 // interface IPhysicsable
 // {
-//     Vector3 Position { get; set; }
-//     Vector3 Velocity { get; set; }
+//     Vector2 Position { get; set; }
+//     Vector2 Velocity { get; set; }
 
 //     // collision boxes and whatnot
 // }
 
 abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer */
 {
-    public Vector3 Position;
-    public Vector3 Velocity;
+    public Vector2 Position;
+    public Vector2 Velocity;
 
     public uint Color = 0xFFFF00FF;
 
@@ -297,16 +305,16 @@ abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer 
         Position += Velocity * game.DeltaTime;
 
         Velocity *= MathF.Pow(0.996f, game.DeltaTime); // drag
-
-        if (Position.Z > 0) Velocity.Z += -0.00009f * game.DeltaTime; // gravity
-        else Position.Z = Velocity.Z = 0; // hitting the ground
     }
+
+    public abstract void OnCollision(Game game, GameObject other);
 }
 
 class Player : GameObject
 {
     public int HP;
-    public List<Weapon> weapons;
+    public List<Weapon> Weapons = new();
+    private Vector2 direction = new(1, 0);
     public override void Update(Game game)
     {
         float speed = 0.005f;
@@ -316,7 +324,21 @@ class Player : GameObject
         if (game.KeyState.Down > 0) Velocity.Y += speed * game.DeltaTime;
         if (game.KeyState.Up > 0) Velocity.Y -= speed * game.DeltaTime;
 
+        if (Velocity.LengthSquared() > 0.0f) direction = Vector2.Normalize(Velocity);
+
+        if (game.KeyState.Shoot == 1)
+            game.Spawn(new Arrow() { Origin = Position, Position = Position + direction * 50, Direction = direction });
+
         base.Update(game);
+    }
+
+    public override void OnCollision(Game game, GameObject other)
+    {
+        while (this.Collider.Overlaps(other.Collider))
+        {
+            var direction = Vector2.Normalize(Collider.Center - other.Collider.Center);
+            Position += new Vector2(direction.X, direction.Y) * 0.1f;
+        }
     }
 }
 
@@ -336,12 +358,22 @@ class AxeMan : Enemy
     {
         Color = 0xFFFF0000;
     }
+
+    public override void OnCollision(Game game, GameObject other)
+    {
+        while (this.Collider.Overlaps(other.Collider))
+        {
+            var direction = Vector2.Normalize(Collider.Center - other.Collider.Center);
+            Position += new Vector2(direction.X, direction.Y) * 0.1f;
+        }
+    }
+
     public override void Update(Game game)
     {
         // track player
         float speed = 0.01f;
-        var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? new(0.0f, 0.0f, 0.0f);
-        Velocity = Vector3.Normalize(playerPos - Position) * speed;
+        var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? new(0.0f, 0.0f);
+        Velocity = Vector2.Normalize(playerPos - Position) * speed;
 
         base.Update(game);
     }
@@ -355,45 +387,38 @@ class Slime : Enemy
     {
         Color = 0xFF00FF00;
     }
-    public override void Update(Game game)
+
+    public override void OnCollision(Game game, GameObject other)
     {
-        if (Position.Z == 0 && game.Rand.Next() % 100 < 1) Velocity.Z += Jump;
-
-        base.Update(game);
+        while (this.Collider.Overlaps(other.Collider))
+        {
+            var direction = Vector2.Normalize(Collider.Center - other.Collider.Center);
+            Position += new Vector2(direction.X, direction.Y) * 0.1f;
+        }
     }
-}
-
-class FriendlyNPC : NPC
-{
-    public List<String> Dialogue;
-
-}
-
-
-class QuestGiver : FriendlyNPC
-{
-    public List<Quest> Quests;
-}
-
-public class Quest
-{
 }
 
 class Projectile : GameObject
 {
-    public Vector2 origin;
-    public float range;
-    public void CheckProjectileCollision(List<GameObject> gameObjects)
+    public Vector2 Origin;
+    public Vector2 Direction;
+    public float Speed = 0.7f;
+    public float RangeSquared = 1000000.0f;
+    public override void Update(Game game)
     {
-        foreach (var other in gameObjects)
-        {
-            if (this != other && this.Collider.Overlaps(other.Collider))
-            {
+        if ((Position - Origin).LengthSquared() > RangeSquared) game.Remove(this);
+        Velocity = Direction * Speed;
 
-                gameObjects.Remove(this);
-            }
+        base.Update(game);
+    }
+
+    public override void OnCollision(Game game, GameObject other)
+    {
+        if (other is not Arrow)
+        {
+            game.Remove(this);
+            if (other is not Player) game.Remove(other);
         }
-        // Implement distance check from origin to check if projectile has travelled max distance
     }
 }
 
