@@ -21,12 +21,12 @@ static class Program
         Game game = new(69420);
 
         // setup the "scene"
-        Vec3D<double> maxPos = (Program.WINDOW_X, Program.WINDOW_Y, 0);
+        Vector3 maxPos = new(Program.WINDOW_X, Program.WINDOW_Y, 0);
         for (int i = 0; i < 100; i++)
         {
             var axeMan = new AxeMan
             {
-                Position = (game.Rand.NextDouble(), game.Rand.NextDouble(), game.Rand.NextDouble()) * maxPos
+                Position = new Vector3((float)game.Rand.NextDouble(), (float)game.Rand.NextDouble(), (float)game.Rand.NextDouble()) * maxPos
             };
             game.GameObjects.Add(axeMan);
         }
@@ -35,11 +35,11 @@ static class Program
         {
             var slime = new Slime
             {
-                Position = (game.Rand.NextDouble(), game.Rand.NextDouble(), game.Rand.NextDouble()) * maxPos
+                Position = new Vector3((float)game.Rand.NextDouble(), (float)game.Rand.NextDouble(), (float)game.Rand.NextDouble()) * maxPos
             };
             game.GameObjects.Add(slime);
         }
-        game.GameObjects.Add(new Player { Position = (100, 100, 0) });
+        game.GameObjects.Add(new Player { Position = new Vector3(100, 100, 0) });
 
         game.Run();
     }
@@ -53,62 +53,16 @@ class KeyState
     public uint Right;
     public uint Close;
 }
-
-struct Vec2D<T>(T x, T y) where T : INumber<T>
+struct Rect(float x, float y, float width, float height)
 {
-    public T X = x;
-    public T Y = y;
+    public float X = x;
+    public float Y = y;
+    public float Width = width;
+    public float Height = height;
 
-    public override readonly string ToString() => $"({X}, {Y})";
+    public Vector2 Center { get => new(X, Y); }
 
-    public static implicit operator Vec2D<T>((T X, T Y) v) => new(v.X, v.Y);
-    public static implicit operator Vec3D<T>(Vec2D<T> v) => (v.X, v.Y, T.Zero);
-    public static Vec2D<T> operator -(Vec2D<T> v) => (-v.X, -v.Y);
-    public static Vec2D<T> operator +(Vec2D<T> v1, Vec2D<T> v2) => (v1.X + v2.X, v1.Y + v2.Y);
-    public static Vec2D<T> operator -(Vec2D<T> v1, Vec2D<T> v2) => (v1.X - v2.X, v1.Y - v2.Y);
-    public static Vec2D<T> operator *(Vec2D<T> v1, Vec2D<T> v2) => (v1.X * v2.X, v1.Y * v2.Y);
-    public static Vec2D<T> operator /(Vec2D<T> v1, Vec2D<T> v2) => (v1.X / v2.X, v1.Y / v2.Y);
-    public static Vec2D<T> operator *(Vec2D<T> v, T x) => (v.X * x, v.Y * x);
-    public static Vec2D<T> operator /(Vec2D<T> v, T x) => (v.X / x, v.Y / x);
-
-    public readonly Vec2D<T> Norm() => this / Abs();
-    public readonly T Abs() => Math.Sqrt((dynamic)Abs2()); // cast to double, couldn't find an interface for that specifically
-    public readonly T Abs2() => Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2); // cast to double, couldn't find an interface for that specifically
-}
-
-struct Vec3D<T>(T x, T y, T z) where T : INumber<T>
-{
-    public T X = x;
-    public T Y = y;
-    public T Z = z;
-
-    public override readonly string ToString() => $"({X}, {Y}, {Z})";
-
-    public static implicit operator Vec3D<T>((T X, T Y, T Z) v) => new(v.X, v.Y, v.Z);
-    public static implicit operator Vec2D<T>(Vec3D<T> v) => new(v.X, v.Y);
-    public static Vec3D<T> operator -(Vec3D<T> v) => (-v.X, -v.Y, -v.Z);
-    public static Vec3D<T> operator +(Vec3D<T> v1, Vec3D<T> v2) => (v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z);
-    public static Vec3D<T> operator -(Vec3D<T> v1, Vec3D<T> v2) => (v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
-    public static Vec3D<T> operator *(Vec3D<T> v1, Vec3D<T> v2) => (v1.X * v2.X, v1.Y * v2.Y, v1.Z * v2.Z);
-    public static Vec3D<T> operator /(Vec3D<T> v1, Vec3D<T> v2) => (v1.X / v2.X, v1.Y / v2.Y, v1.Z / v2.Z);
-    public static Vec3D<T> operator *(Vec3D<T> v, T x) => (v.X * x, v.Y * x, v.Z * x);
-    public static Vec3D<T> operator /(Vec3D<T> v, T x) => (v.X / x, v.Y / x, v.Z / x);
-
-    public readonly Vec3D<T> Norm() => this / Abs();
-    public readonly T Abs() => Math.Sqrt((dynamic)Abs2()); // cast to double, couldn't find an interface for that specifically
-    public readonly T Abs2() => Math.Pow((dynamic)X, 2) + Math.Pow((dynamic)Y, 2) + Math.Pow((dynamic)Z, 2); // cast to double, couldn't find an interface for that specifically
-}
-
-struct Rect<T>(T x, T y, T width, T height) where T : INumber<T>
-{
-    public T X = x;
-    public T Y = y;
-    public T Width = width;
-    public T Height = height;
-
-    public Vec2D<T> Center { get => (X, Y); }
-
-    public bool Overlaps(Rect<T> other)
+    public bool Overlaps(Rect other)
     {
         return
                ((X >= other.X && X < other.X + other.Width)                     // leftmost point within other
@@ -118,9 +72,92 @@ struct Rect<T>(T x, T y, T width, T height) where T : INumber<T>
     }
 }
 
+struct Circle(float x, float y, float r)
+{
+    public float X = x;
+    public float Y = y;
+    public float R = r;
+
+    public Vector2 Center { get => new Vector2(X, Y); }
+    public float Width { get => R + R; }
+    public float Height { get => R + R; }
+
+    public bool Overlaps(Circle other)
+    {
+        return (Center - other.Center).LengthSquared() < Math.Pow((R + other.R), 2);
+    }
+
+#if RENDERING
+    public void Render(nint renderer, uint color)
+    {
+        SDLTools.Assert(SDLTools.SetRenderDrawColor(renderer, color));
+
+        // For filled circle
+        //! CREDIT: https://stackoverflow.com/a/65745687
+        // for (int w = 0; w < R * 2; w++)
+        // {
+        //     for (int h = 0; h < R * 2; h++)
+        //     {
+        //         int dx = (int)(R - w); // horizontal offset
+        //         int dy = (int)(R - h); // vertical offset
+        //         if ((dx * dx + dy * dy) <= (R * R))
+        //         {
+        //             SDL.SDL_RenderDrawPoint(renderer, (int)(X + dx), (int)(Y + dy));
+        //         }
+        //     }
+        // }
+
+        // For non-filled circle (faster)
+        //! CREDIT: https://discourse.libsdl.org/t/query-how-do-you-draw-a-circle-in-sdl2-sdl2/33379
+        int diameter = (int)(R * 2);
+        int x = (int)(R - 1);
+        int y = 0;
+        int tx = 1;
+        int ty = 1;
+        int error = (tx - diameter);
+
+        while (x >= y)
+        {
+            // Each of the following renders an octant of the circle
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X + x), (int)(Y - y)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X + x), (int)(Y + y)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X - x), (int)(Y - y)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X - x), (int)(Y + y)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X + y), (int)(Y - x)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X + y), (int)(Y + x)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X - y), (int)(Y - x)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X - y), (int)(Y + x)));
+
+            if (error <= 0)
+            {
+                ++y;
+                error += ty;
+                ty += 2;
+            }
+
+            if (error > 0)
+            {
+                --x;
+                tx += 2;
+                error += (tx - diameter);
+            }
+        }
+    }
+#endif
+}
+
+static class SDLTools
+{
+    public static void Assert(nint err_code) => Trace.Assert(err_code == 0, $"SDL Error: {SDL.SDL_GetError()}");
+    public static int SetRenderDrawColor(nint renderer, uint color)
+    {
+        return SDL.SDL_SetRenderDrawColor(renderer, (byte)(color >> 16), (byte)(color >> 8), (byte)(color >> 0), (byte)(color >> 24));
+    }
+}
+
 class Game(int seed)
 {
-    public double DeltaTime;
+    public float DeltaTime;
     public Random Rand = new Random(seed);
 
     public List<GameObject> GameObjects = new();
@@ -131,9 +168,9 @@ class Game(int seed)
     public void Run()
     {
 #if RENDERING
-        static void SDL_Assert(nint err_code) { Trace.Assert(err_code == 0, $"SDL Error: {SDL.SDL_GetError()}"); }
 
-        SDL_Assert(SDL.SDL_Init(SDL.SDL_INIT_VIDEO));
+
+        SDLTools.Assert(SDL.SDL_Init(SDL.SDL_INIT_VIDEO));
 
         var window = SDL.SDL_CreateWindow(
                 "hello_sdl2",
@@ -144,11 +181,13 @@ class Game(int seed)
         Trace.Assert(window != 0, "Failed to create window");
 
 
-        var screenSurface = SDL.SDL_GetWindowSurface(window);
+        // var screenSurface = SDL.SDL_GetWindowSurface(window);
+        var renderer = SDL.SDL_CreateRenderer(window, -1, 0);
+        SDLTools.Assert(SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND));
 #endif
 
         var watch = Stopwatch.StartNew();
-        var frameTimeBuffer = new CircularBuffer<double>(100);
+        var frameTimeBuffer = new CircularBuffer<float>(100);
         while (true)
         {
             // the code that you want to measure comes here
@@ -178,11 +217,9 @@ class Game(int seed)
             if (KeyState.Close > 0) Environment.Exit(0);
 #endif
 
-            // watch.Stop();
-            double realDeltaTime = ((double)watch.ElapsedTicks / (double)Stopwatch.Frequency) * 1000;
+            float realDeltaTime = ((float)watch.ElapsedTicks / (float)Stopwatch.Frequency) * 1000;
             watch.Restart();
-            DeltaTime = Math.Clamp(realDeltaTime, double.MinValue, 1000 / 60);
-            if (DeltaTime < 1.0) Console.WriteLine($"Small frame {DeltaTime} ms");
+            DeltaTime = Math.Clamp(realDeltaTime, float.MinValue, 1000 / 60);
             frameTimeBuffer.PushBack(realDeltaTime);
             // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
             SDL.SDL_SetWindowTitle(window, $"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
@@ -191,7 +228,7 @@ class Game(int seed)
             {
                 gameObject.Update(this);
                 Projectile? projectile = gameObject as Projectile;
-                if(projectile != null)
+                if (projectile != null)
                 {
                     projectile.CheckProjectileCollision(GameObjects);
                 }
@@ -201,29 +238,27 @@ class Game(int seed)
             //render
 #if RENDERING
             var bgRect = new SDL.SDL_Rect { x = 0, y = 0, w = windowSize.X, h = windowSize.Y };
-            SDL_Assert(SDL.SDL_FillRect(screenSurface, ref bgRect, 0x111111));
+            SDLTools.SetRenderDrawColor(renderer, 0xFF111111);
+            SDLTools.Assert(SDL.SDL_RenderClear(renderer));
             foreach (var gameObject in GameObjects)
             {
                 var color = gameObject.Color;
-                // Vec2D<double> size = (15, 15);
-                // size += size * (1 + gameObject.Position.Z) / 15;
-                // var rect = new SDL.SDL_Rect { x = (int)gameObject.Position.X, y = (int)gameObject.Position.Y, w = (int)size.X, h = (int)size.Y };
-                var rect = new SDL.SDL_Rect { x = (int)gameObject.BoundingBox.X, y = (int)gameObject.BoundingBox.Y, w = (int)gameObject.BoundingBox.Width, h = (int)gameObject.BoundingBox.Height };
                 foreach (var other in GameObjects)
                 {
-                    while (gameObject != other && gameObject.BoundingBox.Overlaps(other.BoundingBox))
+                    while (gameObject != other && gameObject.Collider.Overlaps(other.Collider))
                     {
-                        var direction = (gameObject.BoundingBox.Center - other.BoundingBox.Center).Norm();
-                        gameObject.Position += new Vec3D<double>(direction.X, direction.Y, 0) * 0.1f;
+                        var direction = Vector2.Normalize(gameObject.Collider.Center - other.Collider.Center);
+                        gameObject.Position += new Vector3(direction.X, direction.Y, 0) * 0.1f;
                     }
                 }
-                SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect, color));
+                gameObject.Collider.Render(renderer, color);
             }
 
+            SDLTools.SetRenderDrawColor(renderer, 0xFFFFFFFF);
             var rect2 = new SDL.SDL_Rect { x = 10, y = 10, w = 10, h = 10 };
-            SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect2, 0xFFFFFF));
+            SDLTools.Assert(SDL.SDL_RenderFillRect(renderer, ref rect2));
 
-            SDL_Assert(SDL.SDL_UpdateWindowSurface(window));
+            SDL.SDL_RenderPresent(renderer);
 #endif
 
             // Thread.Sleep((int)Math.Max(1_000.0 / 60.0 - DeltaTime, 0.0));
@@ -233,7 +268,7 @@ class Game(int seed)
 
 // interface IRenderable
 // {
-//     Vec3D<double> Position { get; set; }
+//     Vector3 Position { get; set; }
 //     uint Color { get; set; }
 
 //     // Textures and whatnot
@@ -241,28 +276,29 @@ class Game(int seed)
 
 // interface IPhysicsable
 // {
-//     Vec3D<double> Position { get; set; }
-//     Vec3D<double> Velocity { get; set; }
+//     Vector3 Position { get; set; }
+//     Vector3 Velocity { get; set; }
 
 //     // collision boxes and whatnot
 // }
 
 abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer */
 {
-    public Vec3D<double> Position;
-    public Vec3D<double> Velocity;
+    public Vector3 Position;
+    public Vector3 Velocity;
 
-    public uint Color = 0xFF00FF;
+    public uint Color = 0xFFFF00FF;
 
-    public Rect<double> BoundingBox { get => new(Position.X, Position.Y, 25, 25); }
+    // public Rect<float> Collider { get => new(Position.X, Position.Y, 25, 25); }
+    public Circle Collider { get => new(Position.X, Position.Y, 12.5f); }
 
     public virtual void Update(Game game)
     {
         Position += Velocity * game.DeltaTime;
 
-        Velocity *= Math.Pow(0.996, game.DeltaTime); // drag
+        Velocity *= MathF.Pow(0.996f, game.DeltaTime); // drag
 
-        if (Position.Z > 0) Velocity.Z += -0.00009 * game.DeltaTime; // gravity
+        if (Position.Z > 0) Velocity.Z += -0.00009f * game.DeltaTime; // gravity
         else Position.Z = Velocity.Z = 0; // hitting the ground
     }
 }
@@ -273,7 +309,7 @@ class Player : GameObject
     public List<Weapon> weapons;
     public override void Update(Game game)
     {
-        var speed = 0.005;
+        float speed = 0.005f;
 
         if (game.KeyState.Right > 0) Velocity.X += speed * game.DeltaTime;
         if (game.KeyState.Left > 0) Velocity.X -= speed * game.DeltaTime;
@@ -298,14 +334,14 @@ class AxeMan : Enemy
 {
     public AxeMan()
     {
-        Color = 0xFF0000;
+        Color = 0xFFFF0000;
     }
     public override void Update(Game game)
     {
         // track player
-        double speed = 0.01;
-        var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? (0.0, 0.0, 0.0);
-        Velocity = (playerPos - Position).Norm() * speed;
+        float speed = 0.01f;
+        var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? new(0.0f, 0.0f, 0.0f);
+        Velocity = Vector3.Normalize(playerPos - Position) * speed;
 
         base.Update(game);
     }
@@ -313,11 +349,11 @@ class AxeMan : Enemy
 
 class Slime : Enemy
 {
-    public double Jump = 0.1;
+    public float Jump = 0.1f;
 
     public Slime()
     {
-        Color = 0x00FF00;
+        Color = 0xFF00FF00;
     }
     public override void Update(Game game)
     {
@@ -345,13 +381,13 @@ public class Quest
 
 class Projectile : GameObject
 {
-    public Vec2D<double> origin;
-    public double range;
+    public Vector2 origin;
+    public float range;
     public void CheckProjectileCollision(List<GameObject> gameObjects)
     {
         foreach (var other in gameObjects)
         {
-            if (this != other && this.BoundingBox.Overlaps(other.BoundingBox))
+            if (this != other && this.Collider.Overlaps(other.Collider))
             {
 
                 gameObjects.Remove(this);
