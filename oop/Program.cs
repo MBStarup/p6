@@ -354,6 +354,10 @@ class Player : GameObject
 
     public override void OnCollision(Game game, GameObject other)
     {
+        if(other is GroundItem)
+        {
+            (other as GroundItem).OnPickup(this, game);
+        }
         while (this.Collider.Overlaps(other.Collider))
         {
             var direction = Vector2.Normalize(Collider.Center - other.Collider.Center);
@@ -369,7 +373,7 @@ abstract class NPC : GameObject
 
 abstract class Enemy : NPC
 {
-    public List<Item> Loot;
+    public List<GroundItem> Loot;
 }
 
 class AxeMan : Enemy
@@ -381,6 +385,10 @@ class AxeMan : Enemy
 
     public override void OnCollision(Game game, GameObject other)
     {
+        if(other is GroundItem)
+        {
+            game.Remove(other);
+        }
         while (this.Collider.Overlaps(other.Collider))
         {
             var direction = Vector2.Normalize(Collider.Center - other.Collider.Center);
@@ -424,6 +432,7 @@ abstract class Projectile : GameObject
     public Vector2 Direction;
     public float Speed;
     public double RangeSquared;
+    public int Damage;
     public override void Update(Game game)
     {
         if ((Position - Origin).LengthSquared() > RangeSquared) game.Remove(this);
@@ -438,19 +447,22 @@ abstract class Projectile : GameObject
         {
             game.Remove(this);
             game.Remove(other);
+            game.Spawn(new ArrowBundle(other.Position));
         }
     }
 }
 
 class Arrow : Projectile
 {
-    public Arrow(Vector2 origin, Vector2 direction)
+    public Arrow(Vector2 origin, Vector2 direction, int damage)
     {
+
         Origin = origin;
         Direction = direction;
         Position = origin + direction*15f;
         Speed = 0.5f;
         RangeSquared = 10000f;
+        Damage = damage;
     }
     public override Circle Collider { get => new(Position.X, Position.Y, 2.5f); }
 
