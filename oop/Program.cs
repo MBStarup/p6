@@ -308,7 +308,7 @@ abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer 
     public uint Color = 0xFFFF00FF;
 
     // public Rect<float> Collider { get => new(Position.X, Position.Y, 25, 25); }
-    public Circle Collider { get => new(Position.X, Position.Y, 12.5f); }
+    public virtual Circle Collider { get => new(Position.X, Position.Y, 12.5f); }
 
     public virtual void Update(Game game)
     {
@@ -322,9 +322,15 @@ abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer 
 
 class Player : GameObject
 {
+    public Player()
+    {
+        Weapons = [new Bow()];
+    }
+    private int currentWeapon = 0;
+    private float attackCooldown = 0;
     public int HP;
-    public List<Weapon> Weapons = new();
-    private Vector2 direction = new(1, 0);
+    public List<Weapon> Weapons;
+    public Vector2 direction = new(1, 0);
     public override void Update(Game game)
     {
         float speed = 0.005f;
@@ -337,8 +343,12 @@ class Player : GameObject
         if (Velocity.LengthSquared() > 0.0f) direction = Vector2.Normalize(Velocity);
 
         if (game.KeyState.Shoot == 1)
-            game.Spawn(new Arrow() { Origin = Position, Position = Position + direction * 50, Direction = direction });
-
+            if(attackCooldown <= 0){
+                Console.WriteLine(((Bow)Weapons[currentWeapon]).arrows);
+                Weapons[currentWeapon].Attack(this, game);
+                attackCooldown = 2;
+            }
+        attackCooldown -= game.DeltaTime;
         base.Update(game);
     }
 
@@ -408,12 +418,12 @@ class Slime : Enemy
     }
 }
 
-class Projectile : GameObject
+abstract class Projectile : GameObject
 {
     public Vector2 Origin;
     public Vector2 Direction;
-    public float Speed = 0.7f;
-    public float RangeSquared = 1000000.0f;
+    public float Speed;
+    public double RangeSquared;
     public override void Update(Game game)
     {
         if ((Position - Origin).LengthSquared() > RangeSquared) game.Remove(this);
@@ -424,12 +434,24 @@ class Projectile : GameObject
 
     public override void OnCollision(Game game, GameObject other)
     {
-
-        if (other is Enemy) game.Remove(other);
+        if (other is Enemy)
+        {
+            game.Remove(this);
+            game.Remove(other);
+        }
     }
 }
 
 class Arrow : Projectile
 {
+    public Arrow(Vector2 origin, Vector2 direction)
+    {
+        Origin = origin;
+        Direction = direction;
+        Position = origin + direction*15f;
+        Speed = 0.5f;
+        RangeSquared = 10000f;
+    }
+    public override Circle Collider { get => new(Position.X, Position.Y, 2.5f); }
 
 }
