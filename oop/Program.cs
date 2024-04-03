@@ -7,6 +7,7 @@ using System.Numerics;
 using CircularBuffer;
 using SDL2;
 using Items;
+using System.Collections;
 
 
 static class Program
@@ -52,7 +53,6 @@ class KeyState
     public uint Left;
     public uint Right;
     public uint Close;
-
     public int Shoot;
 }
 struct Rect(float x, float y, float width, float height)
@@ -191,16 +191,25 @@ class Game(int seed)
         {
             // the code that you want to measure comes here
 #if INPUT
+            if (KeyState.Right > 0) KeyState.Right += 1;
+            if (KeyState.Left > 0) KeyState.Left += 1;
+            if (KeyState.Up > 0) KeyState.Up += 1;
+            if (KeyState.Down > 0) KeyState.Down += 1;
+            if (KeyState.Close > 0) KeyState.Close += 1;
+            if (KeyState.Shoot > 0) KeyState.Shoot += 1;
+
             while (SDL.SDL_PollEvent(out SDL.SDL_Event e) != 0)
             {
+
+                if (e.type == SDL.SDL_EventType.SDL_QUIT) KeyState.Close = 1;
                 if (e.type == SDL.SDL_EventType.SDL_KEYDOWN)
                 {
-                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_d) KeyState.Right += 1;
-                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_a) KeyState.Left += 1;
-                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_w) KeyState.Up += 1;
-                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s) KeyState.Down += 1;
-                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close += 1;
-                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot += 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_d && KeyState.Right == 0) KeyState.Right = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_a && KeyState.Left == 0) KeyState.Left = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_w && KeyState.Up == 0) KeyState.Up = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s && KeyState.Down == 0) KeyState.Down = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE && KeyState.Close == 0) KeyState.Close = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e && KeyState.Shoot == 0) KeyState.Shoot = 1;
                 }
 
                 if (e.type == SDL.SDL_EventType.SDL_KEYUP)
@@ -212,8 +221,9 @@ class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close = 0;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot = 0;
                 }
-
             }
+
+
 
             if (KeyState.Close > 0) Environment.Exit(0);
 #endif
@@ -414,11 +424,8 @@ class Projectile : GameObject
 
     public override void OnCollision(Game game, GameObject other)
     {
-        if (other is not Arrow)
-        {
-            game.Remove(this);
-            if (other is not Player) game.Remove(other);
-        }
+
+        if (other is Enemy) game.Remove(other);
     }
 }
 
