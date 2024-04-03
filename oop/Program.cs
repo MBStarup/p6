@@ -86,6 +86,73 @@ struct Circle(float x, float y, float r)
     {
         return (Center - other.Center).LengthSquared() < Math.Pow((R + other.R), 2);
     }
+
+#if RENDERING
+    public void Render(nint renderer, uint color)
+    {
+        SDLTools.Assert(SDLTools.SetRenderDrawColor(renderer, color));
+
+        // For filled circle
+        //! CREDIT: https://stackoverflow.com/a/65745687
+        // for (int w = 0; w < R * 2; w++)
+        // {
+        //     for (int h = 0; h < R * 2; h++)
+        //     {
+        //         int dx = (int)(R - w); // horizontal offset
+        //         int dy = (int)(R - h); // vertical offset
+        //         if ((dx * dx + dy * dy) <= (R * R))
+        //         {
+        //             SDL.SDL_RenderDrawPoint(renderer, (int)(X + dx), (int)(Y + dy));
+        //         }
+        //     }
+        // }
+
+        // For non-filled circle (faster)
+        //! CREDIT: https://discourse.libsdl.org/t/query-how-do-you-draw-a-circle-in-sdl2-sdl2/33379
+        int diameter = (int)(R * 2);
+        int x = (int)(R - 1);
+        int y = 0;
+        int tx = 1;
+        int ty = 1;
+        int error = (tx - diameter);
+
+        while (x >= y)
+        {
+            // Each of the following renders an octant of the circle
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X + x), (int)(Y - y)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X + x), (int)(Y + y)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X - x), (int)(Y - y)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X - x), (int)(Y + y)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X + y), (int)(Y - x)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X + y), (int)(Y + x)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X - y), (int)(Y - x)));
+            SDLTools.Assert(SDL.SDL_RenderDrawPoint(renderer, (int)(X - y), (int)(Y + x)));
+
+            if (error <= 0)
+            {
+                ++y;
+                error += ty;
+                ty += 2;
+            }
+
+            if (error > 0)
+            {
+                --x;
+                tx += 2;
+                error += (tx - diameter);
+            }
+        }
+    }
+#endif
+}
+
+static class SDLTools
+{
+    public static void Assert(nint err_code) => Trace.Assert(err_code == 0, $"SDL Error: {SDL.SDL_GetError()}");
+    public static int SetRenderDrawColor(nint renderer, uint color)
+    {
+        return SDL.SDL_SetRenderDrawColor(renderer, (byte)(color >> 16), (byte)(color >> 8), (byte)(color >> 0), (byte)(color >> 24));
+    }
 }
 
 class Game(int seed)
@@ -101,9 +168,9 @@ class Game(int seed)
     public void Run()
     {
 #if RENDERING
-        static void SDL_Assert(nint err_code) { Trace.Assert(err_code == 0, $"SDL Error: {SDL.SDL_GetError()}"); }
 
-        SDL_Assert(SDL.SDL_Init(SDL.SDL_INIT_VIDEO));
+
+        SDLTools.Assert(SDL.SDL_Init(SDL.SDL_INIT_VIDEO));
 
         var window = SDL.SDL_CreateWindow(
                 "hello_sdl2",
@@ -114,7 +181,9 @@ class Game(int seed)
         Trace.Assert(window != 0, "Failed to create window");
 
 
-        var screenSurface = SDL.SDL_GetWindowSurface(window);
+        // var screenSurface = SDL.SDL_GetWindowSurface(window);
+        var renderer = SDL.SDL_CreateRenderer(window, -1, 0);
+        SDLTools.Assert(SDL.SDL_SetRenderDrawBlendMode(renderer, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND));
 #endif
 
         var watch = Stopwatch.StartNew();
@@ -148,11 +217,9 @@ class Game(int seed)
             if (KeyState.Close > 0) Environment.Exit(0);
 #endif
 
-            // watch.Stop();
             float realDeltaTime = ((float)watch.ElapsedTicks / (float)Stopwatch.Frequency) * 1000;
             watch.Restart();
             DeltaTime = Math.Clamp(realDeltaTime, float.MinValue, 1000 / 60);
-            if (DeltaTime < 1.0) Console.WriteLine($"Small frame {DeltaTime} ms");
             frameTimeBuffer.PushBack(realDeltaTime);
             // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
             SDL.SDL_SetWindowTitle(window, $"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
@@ -171,14 +238,11 @@ class Game(int seed)
             //render
 #if RENDERING
             var bgRect = new SDL.SDL_Rect { x = 0, y = 0, w = windowSize.X, h = windowSize.Y };
-            SDL_Assert(SDL.SDL_FillRect(screenSurface, ref bgRect, 0x111111));
+            SDLTools.SetRenderDrawColor(renderer, 0xFF111111);
+            SDLTools.Assert(SDL.SDL_RenderClear(renderer));
             foreach (var gameObject in GameObjects)
             {
                 var color = gameObject.Color;
-                // Vector2 size = (15, 15);
-                // size += size * (1 + gameObject.Position.Z) / 15;
-                // var rect = new SDL.SDL_Rect { x = (int)gameObject.Position.X, y = (int)gameObject.Position.Y, w = (int)size.X, h = (int)size.Y };
-                var rect = new SDL.SDL_Rect { x = (int)gameObject.Collider.X, y = (int)gameObject.Collider.Y, w = (int)gameObject.Collider.Width, h = (int)gameObject.Collider.Height };
                 foreach (var other in GameObjects)
                 {
                     while (gameObject != other && gameObject.Collider.Overlaps(other.Collider))
@@ -187,13 +251,14 @@ class Game(int seed)
                         gameObject.Position += new Vector3(direction.X, direction.Y, 0) * 0.1f;
                     }
                 }
-                SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect, color));
+                gameObject.Collider.Render(renderer, color);
             }
 
+            SDLTools.SetRenderDrawColor(renderer, 0xFFFFFFFF);
             var rect2 = new SDL.SDL_Rect { x = 10, y = 10, w = 10, h = 10 };
-            SDL_Assert(SDL.SDL_FillRect(screenSurface, ref rect2, 0xFFFFFF));
+            SDLTools.Assert(SDL.SDL_RenderFillRect(renderer, ref rect2));
 
-            SDL_Assert(SDL.SDL_UpdateWindowSurface(window));
+            SDL.SDL_RenderPresent(renderer);
 #endif
 
             // Thread.Sleep((int)Math.Max(1_000.0 / 60.0 - DeltaTime, 0.0));
@@ -222,10 +287,10 @@ abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer 
     public Vector3 Position;
     public Vector3 Velocity;
 
-    public uint Color = 0xFF00FF;
+    public uint Color = 0xFFFF00FF;
 
     // public Rect<float> Collider { get => new(Position.X, Position.Y, 25, 25); }
-    public Circle Collider { get => new(Position.X, Position.Y, 25); }
+    public Circle Collider { get => new(Position.X, Position.Y, 12.5f); }
 
     public virtual void Update(Game game)
     {
@@ -269,7 +334,7 @@ class AxeMan : Enemy
 {
     public AxeMan()
     {
-        Color = 0xFF0000;
+        Color = 0xFFFF0000;
     }
     public override void Update(Game game)
     {
@@ -288,7 +353,7 @@ class Slime : Enemy
 
     public Slime()
     {
-        Color = 0x00FF00;
+        Color = 0xFF00FF00;
     }
     public override void Update(Game game)
     {
