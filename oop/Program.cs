@@ -25,7 +25,7 @@ static class Program
         Vector2 maxPos = new(Program.WINDOW_X, Program.WINDOW_Y);
         for (int i = 0; i < 100; i++)
         {
-            var axeMan = new AxeMan
+            var axeMan = new AxeMan(Game.GenerateLoot())
             {
                 Position = new Vector2((float)game.Rand.NextDouble(), (float)game.Rand.NextDouble()) * maxPos
             };
@@ -34,7 +34,7 @@ static class Program
 
         for (int i = 0; i < 100; i++)
         {
-            var slime = new Slime
+            var slime = new Slime(Game.GenerateLoot())
             {
                 Position = new Vector2((float)game.Rand.NextDouble(), (float)game.Rand.NextDouble()) * maxPos
             };
@@ -250,6 +250,10 @@ class Game(int seed)
             }
 
             //remove stuff
+            foreach(var gameObject in ToRemove)
+            {
+                gameObject.OnRemoval(this);
+            }
             GameObjects.RemoveAll(ToRemove.Contains);
             ToRemove.Clear();
 
@@ -282,6 +286,16 @@ class Game(int seed)
 
     public void Remove(GameObject gameObject) => ToRemove.Add(gameObject);
     public void Spawn(GameObject gameObject) => ToSpawn.Add(gameObject);
+    public static List<Item> GenerateLoot()
+    {
+        Random rng = new Random(404);
+        var loot = new List<Item>();
+        if(rng.Next(10)>5)
+        loot.Add(new HealthPack());
+        loot.Add(new ArrowBundle(rng.Next(1,10)));
+        loot.Add(new BoltBundle(rng.Next(1,3)));
+        return loot;
+    }
 }
 
 // interface IRenderable
@@ -318,13 +332,14 @@ abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer 
     }
 
     public abstract void OnCollision(Game game, GameObject other);
+    public virtual void OnRemoval(Game game) {}
 }
 
 class Player : GameObject
 {
     public Player()
     {
-        Weapons = [new Bow()];
+        Weapons = [new Crossbow()];
     }
     private int currentWeapon = 0;
     private float attackCooldown = 0;
@@ -343,20 +358,22 @@ class Player : GameObject
         if (Velocity.LengthSquared() > 0.0f) direction = Vector2.Normalize(Velocity);
 
         if (game.KeyState.Shoot == 1)
-            if(attackCooldown <= 0){
-                Console.WriteLine(((Bow)Weapons[currentWeapon]).arrows);
-                Weapons[currentWeapon].Attack(this, game);
-                attackCooldown = 2;
+            if(attackCooldown <= 0)
+            {
+                Weapons[currentWeapon].Attack(game, this);
             }
-        attackCooldown -= game.DeltaTime;
+        foreach(Weapon weapon in Weapons)
+        {
+            weapon.Update(game);
+        }
         base.Update(game);
     }
 
     public override void OnCollision(Game game, GameObject other)
     {
-        if(other is GroundItem)
+        if(other is LootBox)
         {
-            (other as GroundItem).OnPickup(this, game);
+            (other as LootBox).OnCollision(game, this);
         }
         while (this.Collider.Overlaps(other.Collider))
         {
@@ -373,19 +390,27 @@ abstract class NPC : GameObject
 
 abstract class Enemy : NPC
 {
-    public List<GroundItem> Loot;
+    public Enemy(List<Item> loot)
+    {
+        Loot = loot;
+    }
+    public List<Item> Loot;
+    public override void OnRemoval(Game game)
+    {
+        game.Spawn(new LootBox(Loot, this));
+    }
 }
 
 class AxeMan : Enemy
 {
-    public AxeMan()
+    public AxeMan(List<Item> loot) : base(loot)
     {
         Color = 0xFFFF0000;
     }
 
     public override void OnCollision(Game game, GameObject other)
     {
-        if(other is GroundItem)
+        if(other is LootBox)
         {
             game.Remove(other);
         }
@@ -411,7 +436,7 @@ class Slime : Enemy
 {
     public float Jump = 0.1f;
 
-    public Slime()
+    public Slime(List<Item> loot) : base(loot)
     {
         Color = 0xFF00FF00;
     }
@@ -433,6 +458,7 @@ abstract class Projectile : GameObject
     public float Speed;
     public double RangeSquared;
     public int Damage;
+    public override Circle Collider { get => new(Position.X, Position.Y, 2.5f); }
     public override void Update(Game game)
     {
         if ((Position - Origin).LengthSquared() > RangeSquared) game.Remove(this);
@@ -447,7 +473,6 @@ abstract class Projectile : GameObject
         {
             game.Remove(this);
             game.Remove(other);
-            game.Spawn(new ArrowBundle(other.Position));
         }
     }
 }
@@ -463,7 +488,34 @@ class Arrow : Projectile
         Speed = 0.5f;
         RangeSquared = 10000f;
         Damage = damage;
+        Color = 0xFF6a329f;
     }
-    public override Circle Collider { get => new(Position.X, Position.Y, 2.5f); }
+}
 
+class Bolt : Projectile
+{
+    public Bolt(Vector2 origin, Vector2 direction, int damage)
+    {
+        Origin = origin;
+        Direction = direction;
+        Position = origin + direction*15f;
+        Speed = 0.5f;
+        RangeSquared = 10000f;
+        Damage = damage;
+        PenetrationPower = 3;
+        Color = 0xFFc90076;
+    }
+    public int PenetrationPower {get;set;}
+    public override void OnCollision(Game game, GameObject other)
+    {
+        if (other is Enemy)
+        {
+            PenetrationPower--;
+            game.Remove(other);
+        }
+        if (PenetrationPower <= 0)
+        {
+            game.Remove(this);
+        }
+    }
 }
