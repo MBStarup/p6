@@ -91,6 +91,7 @@ class Shotgun : Weapon
         {
             shells-=numberShots;
             shotDirection = player.direction;
+            /* Have to use temp variable, because assigning X would change the result of Y */
             tempDirection.X = MathF.Cos(startAngle)*shotDirection.X-MathF.Sin(startAngle)*shotDirection.Y;
             tempDirection.Y = MathF.Sin(startAngle)*shotDirection.X+MathF.Cos(startAngle)*shotDirection.Y;
             shotDirection = tempDirection;
