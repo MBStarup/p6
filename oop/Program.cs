@@ -295,6 +295,7 @@ class Game(int seed)
         loot.Add(new HealthPack());
         loot.Add(new ArrowBundle(rng.Next(1,10)));
         loot.Add(new BoltBundle(rng.Next(1,3)));
+        loot.Add(new ShellBox(rng.Next(1,3)*5));
         return loot;
     }
 }
@@ -340,7 +341,7 @@ class Player : GameObject
 {
     public Player()
     {
-        Weapons = [new Crossbow()];
+        Weapons = [new Shotgun()];
     }
     private int currentWeapon = 0;
     private float attackCooldown = 0;

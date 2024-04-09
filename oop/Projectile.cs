@@ -71,3 +71,18 @@ class Bolt : Projectile
         }
     }
 }
+
+class Shell : Projectile
+{
+    public Shell(Vector2 origin, Vector2 direction, int damage)
+    {
+
+        Origin = origin;
+        Direction = direction;
+        Position = origin + direction*15f;
+        Speed = 0.3f;
+        RangeSquared = 10000f;
+        Damage = damage;
+        Color = 0xFF6a329f;
+    }
+}

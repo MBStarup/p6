@@ -69,6 +69,45 @@ class Crossbow : Weapon
     }
 }
 
+class Shotgun : Weapon
+{
+    public Shotgun()
+    {
+        shells = 25;
+        angleBetweenShots = -(2*startAngle / (numberShots-1));
+    }
+    private Vector2 shotDirection;
+    private Vector2 tempDirection;
+    private float startAngle = 0.5f;
+    private float angleBetweenShots;
+    public int shells;
+    public int numberShots = 5;
+    public override int Range => 5;
+    public override int Damage => 7;
+    public override float Cooldown => 4000;
+    public override void Attack(Game game, Player player)
+    {
+        if(shells >= numberShots && RemainingCooldown<=0)
+        {
+            shells-=numberShots;
+            shotDirection = player.direction;
+            tempDirection.X = MathF.Cos(startAngle)*shotDirection.X-MathF.Sin(startAngle)*shotDirection.Y;
+            tempDirection.Y = MathF.Sin(startAngle)*shotDirection.X+MathF.Cos(startAngle)*shotDirection.Y;
+            shotDirection = tempDirection;
+            game.Spawn(new Shell(player.Position, shotDirection, Damage));
+            for(int i=1;i<numberShots;i++)
+            {
+                tempDirection.X = MathF.Cos(angleBetweenShots)*shotDirection.X-MathF.Sin(angleBetweenShots)*shotDirection.Y;
+                tempDirection.Y = MathF.Sin(angleBetweenShots)*shotDirection.X+MathF.Cos(angleBetweenShots)*shotDirection.Y;
+                shotDirection = tempDirection;
+                game.Spawn(new Shell(player.Position, shotDirection, Damage));
+                Console.WriteLine(shotDirection);
+            }
+            base.Attack(game, player);
+        }
+    }
+}
+
 class LootBox : GameObject
 {
     public LootBox(List<Item> loot, GameObject spawner)
