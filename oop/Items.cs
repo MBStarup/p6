@@ -54,3 +54,19 @@ class BoltBundle : AmmoBundle
         }
     }
 }
+
+class ShellBox : AmmoBundle
+{
+    public ShellBox(int amount) : base(amount)
+    {
+
+    }
+    public override void OnPickup(Game game, Player player)
+    {
+        Shotgun shotgun = player.Weapons.Find(weapon => weapon is Shotgun) as Shotgun;
+        if(shotgun != null)
+        {
+            shotgun.shells += Amount;
+        }
+    }
+}
