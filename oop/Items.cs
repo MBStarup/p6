@@ -20,7 +20,7 @@ abstract class AmmoBundle : Item
     {
         Amount = amount;
     }
-    public int Amount {get; set;}
+    public int Amount { get; set; }
 }
 
 class ArrowBundle : AmmoBundle
@@ -32,9 +32,9 @@ class ArrowBundle : AmmoBundle
     public override void OnPickup(Game game, Player player)
     {
         Bow bow = player.Weapons.Find(weapon => weapon is Bow) as Bow;
-        if(bow != null)
+        if (bow != null)
         {
-            bow.arrows += Amount;
+            bow.Ammo += Amount;
         }
     }
 }
@@ -48,9 +48,9 @@ class BoltBundle : AmmoBundle
     public override void OnPickup(Game game, Player player)
     {
         Crossbow crossbow = player.Weapons.Find(weapon => weapon is Crossbow) as Crossbow;
-        if(crossbow != null)
+        if (crossbow != null)
         {
-            crossbow.bolts += Amount;
+            crossbow.Ammo += Amount;
         }
     }
 }
@@ -64,9 +64,9 @@ class ShellBox : AmmoBundle
     public override void OnPickup(Game game, Player player)
     {
         Shotgun shotgun = player.Weapons.Find(weapon => weapon is Shotgun) as Shotgun;
-        if(shotgun != null)
+        if (shotgun != null)
         {
-            shotgun.shells += Amount;
+            shotgun.Ammo += Amount;
         }
     }
 }

@@ -21,10 +21,11 @@ abstract class Projectile : GameObject
 
     public override void OnCollision(Game game, GameObject other)
     {
-        if (other is Enemy)
+        Enemy enemy = (other as Enemy);
+        if (enemy != null)
         {
+            enemy.TakeDamageFrom(game, this);
             game.Remove(this);
-            game.Remove(other);
         }
     }
 }
@@ -36,7 +37,7 @@ class Arrow : Projectile
 
         Origin = origin;
         Direction = direction;
-        Position = origin + direction*15f;
+        Position = origin + direction * 15f;
         Speed = 0.5f;
         RangeSquared = 10000f;
         Damage = damage;
@@ -50,20 +51,20 @@ class Bolt : Projectile
     {
         Origin = origin;
         Direction = direction;
-        Position = origin + direction*15f;
+        Position = origin + direction * 15f;
         Speed = 0.5f;
         RangeSquared = 10000f;
         Damage = damage;
         PenetrationPower = 3;
         Color = 0xFFc90076;
     }
-    public int PenetrationPower {get;set;}
+    public int PenetrationPower { get; set; }
     public override void OnCollision(Game game, GameObject other)
     {
         if (other is Enemy)
         {
             PenetrationPower--;
-            game.Remove(other);
+            ((Enemy)other).TakeDamageFrom(game, this);
         }
         if (PenetrationPower <= 0)
         {
@@ -79,7 +80,7 @@ class Shell : Projectile
 
         Origin = origin;
         Direction = direction;
-        Position = origin + direction*15f;
+        Position = origin + direction * 15f;
         Speed = 0.3f;
         RangeSquared = 10000f;
         Damage = damage;

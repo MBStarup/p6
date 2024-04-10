@@ -9,6 +9,7 @@ using SDL2;
 using Items;
 using System.Collections;
 using Weapons;
+using System.Reflection.Metadata;
 
 
 static class Program
@@ -153,6 +154,8 @@ static class SDLTools
 {
     public static void Assert(nint err_code) => Trace.Assert(err_code == 0, $"SDL Error: {SDL.SDL_GetError()}");
     public static int SetRenderDrawColor(nint renderer, uint color) => SDL.SDL_SetRenderDrawColor(renderer, (byte)(color >> 16), (byte)(color >> 8), (byte)(color >> 0), (byte)(color >> 24));
+    public static uint ColorFromRGB(uint red, uint blue, uint green) => ColorFromRGBA(red, green, blue, 255);
+    public static uint ColorFromRGBA(uint red, uint blue, uint green, uint alpha) => (alpha << 24) + (red << 16) + (green << 8) + (blue);
 }
 
 class Game(int seed)
@@ -251,7 +254,7 @@ class Game(int seed)
             }
 
             //remove stuff
-            foreach(var gameObject in ToRemove)
+            foreach (var gameObject in ToRemove)
             {
                 gameObject.OnRemoval(this);
             }
@@ -274,9 +277,26 @@ class Game(int seed)
                 gameObject.Collider.Render(renderer, color);
             }
 
-            SDLTools.SetRenderDrawColor(renderer, 0xFFFFFFFF);
-            var rect2 = new SDL.SDL_Rect { x = 10, y = 10, w = 10, h = 10 };
-            SDLTools.Assert(SDL.SDL_RenderFillRect(renderer, ref rect2));
+            Player player = GameObjects.FirstOrDefault(x => x is Player, null) as Player;
+            if (player == null) System.Console.WriteLine("no player");
+            else
+            {
+                if (player.CurrentWeapon.RemainingCooldown > 0)
+                {
+                    SDLTools.SetRenderDrawColor(renderer, 0xFFFF0000);
+                }
+                else
+                {
+                    SDLTools.SetRenderDrawColor(renderer, 0xFFFFFFFF);
+                }
+                for (int i = 0; i < player.CurrentWeapon.Ammo; i++)
+                {
+                    var rect2 = new SDL.SDL_Rect { x = 10 + i * 20, y = 10, w = 10, h = 10 };
+                    SDLTools.Assert(SDL.SDL_RenderFillRect(renderer, ref rect2));
+                }
+                int dirIndicatorScale = 10;
+                SDL.SDL_RenderDrawLine(renderer, (int)(player.Position.X), (int)(player.Position.Y), (int)(player.Position.X + player.direction.X * dirIndicatorScale), (int)(player.Position.Y + player.direction.Y * dirIndicatorScale));
+            }
 
             SDL.SDL_RenderPresent(renderer);
 #endif
@@ -291,11 +311,11 @@ class Game(int seed)
     {
         Random rng = new Random(404);
         var loot = new List<Item>();
-        if(rng.Next(10)>5)
-        loot.Add(new HealthPack());
-        loot.Add(new ArrowBundle(rng.Next(1,10)));
-        loot.Add(new BoltBundle(rng.Next(1,3)));
-        loot.Add(new ShellBox(rng.Next(1,3)*5));
+        if (rng.Next(10) > 5)
+            loot.Add(new HealthPack());
+        loot.Add(new ArrowBundle(rng.Next(1, 10)));
+        loot.Add(new BoltBundle(rng.Next(1, 3)));
+        loot.Add(new ShellBox(rng.Next(1, 3) * 5));
         return loot;
     }
 }
@@ -334,23 +354,27 @@ abstract class GameObject /* : IPhysicsable, IRenderable Turns out to be cancer 
     }
 
     public abstract void OnCollision(Game game, GameObject other);
-    public virtual void OnRemoval(Game game) {}
+    public virtual void OnRemoval(Game game) { }
+
+
 }
 
 class Player : GameObject
 {
     public Player()
     {
-        Weapons = [new Shotgun()];
+        Weapons = [new Shotgun(), new Crossbow(),];
     }
+    public Weapon? CurrentWeapon => Weapons[currentWeapon]; // TODO: might throw if no weapons
     private int currentWeapon = 0;
     private float attackCooldown = 0;
+    public int MaxHP;
     public int HP;
     public List<Weapon> Weapons;
     public Vector2 direction = new(1, 0);
     public override void Update(Game game)
     {
-        float speed = 0.005f;
+        float speed = 0.0025f;
 
         if (game.KeyState.Right > 0) Velocity.X += speed * game.DeltaTime;
         if (game.KeyState.Left > 0) Velocity.X -= speed * game.DeltaTime;
@@ -360,11 +384,11 @@ class Player : GameObject
         if (Velocity.LengthSquared() > 0.0f) direction = Vector2.Normalize(Velocity);
 
         if (game.KeyState.Shoot == 1)
-            if(attackCooldown <= 0)
+            if (attackCooldown <= 0)
             {
                 Weapons[currentWeapon].Attack(game, this);
             }
-        foreach(Weapon weapon in Weapons)
+        foreach (Weapon weapon in Weapons)
         {
             weapon.Update(game);
         }
@@ -373,10 +397,7 @@ class Player : GameObject
 
     public override void OnCollision(Game game, GameObject other)
     {
-        if(other is LootBox)
-        {
-            (other as LootBox).OnCollision(game, this);
-        }
+        (other as LootBox)?.OnCollision(game, this);
         while (this.Collider.Overlaps(other.Collider))
         {
             var direction = Vector2.Normalize(Collider.Center - other.Collider.Center);
@@ -387,7 +408,8 @@ class Player : GameObject
 
 abstract class NPC : GameObject
 {
-    public int HP;
+    public const int MaxHP = 21;
+    public int HP = MaxHP;
 }
 
 abstract class Enemy : NPC
@@ -401,18 +423,10 @@ abstract class Enemy : NPC
     {
         game.Spawn(new LootBox(Loot, this));
     }
-}
-
-class AxeMan : Enemy
-{
-    public AxeMan(List<Item> loot) : base(loot)
-    {
-        Color = 0xFFFF0000;
-    }
 
     public override void OnCollision(Game game, GameObject other)
     {
-        if(other is LootBox)
+        if (other is LootBox)
         {
             game.Remove(other);
         }
@@ -422,6 +436,26 @@ class AxeMan : Enemy
             Position += new Vector2(direction.X, direction.Y) * 0.1f;
         }
     }
+    public void TakeDamageFrom(Game game, Projectile projectile)
+    {
+        HP -= projectile.Damage;
+        System.Console.WriteLine(this.GetType().ToString() + " took " + projectile.Damage + " damage, and is now at " + HP + " HP!");
+        if (HP <= 0)
+        {
+            System.Console.WriteLine("and then it died.");
+            game.Remove(this);
+        }
+    }
+
+}
+
+class AxeMan : Enemy
+{
+    public AxeMan(List<Item> loot) : base(loot)
+    {
+        Color = 0xFFFF0000;
+    }
+
 
     public override void Update(Game game)
     {
@@ -430,25 +464,16 @@ class AxeMan : Enemy
         var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? new(0.0f, 0.0f);
         Velocity = Vector2.Normalize(playerPos - Position) * speed;
 
+        Color = SDLTools.ColorFromRGB(155 + (uint)(100 * (HP / MaxHP)), (uint)(100 * (HP / MaxHP)), (uint)(100 * (HP / MaxHP)));
+
         base.Update(game);
     }
 }
 
 class Slime : Enemy
 {
-    public float Jump = 0.1f;
-
     public Slime(List<Item> loot) : base(loot)
     {
         Color = 0xFF00FF00;
-    }
-
-    public override void OnCollision(Game game, GameObject other)
-    {
-        while (this.Collider.Overlaps(other.Collider))
-        {
-            var direction = Vector2.Normalize(Collider.Center - other.Collider.Center);
-            Position += new Vector2(direction.X, direction.Y) * 0.1f;
-        }
     }
 }
