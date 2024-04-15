@@ -80,13 +80,13 @@ class Replay
     private int replaystep = 0;
     public void update(Game game)
     {
-        game.DeltaTime = inputs[replaystep].DeltaTime;
         if(replaystep >= inputs.Count)
         {
             game.KeyState.Close = 1;
         }
         else
         {
+            game.DeltaTime = inputs[replaystep].DeltaTime;
             game.KeyState.Up = inputs[replaystep].KeyState.Up;
             game.KeyState.Down = inputs[replaystep].KeyState.Down;
             game.KeyState.Left = inputs[replaystep].KeyState.Left;
