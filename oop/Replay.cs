@@ -4,15 +4,12 @@ class Recording
     public Recording()
     {
         loopInputs = new List<LoopInputs>();
-        currentTimeStamp = 0;
     }
     public StreamWriter writer;
     public List<LoopInputs> loopInputs;
-    public float currentTimeStamp;
     public void recordState(Game game)
     {
-        currentTimeStamp += game.DeltaTime;
-        loopInputs.Add(new LoopInputs(currentTimeStamp, game.KeyState));
+        loopInputs.Add(new LoopInputs(game.DeltaTime, game.KeyState));
     }
     public void saveRecording()
     {
@@ -27,9 +24,9 @@ class Recording
 }
 class LoopInputs
 {
-    public LoopInputs(float timestamp, KeyState keystate)
+    public LoopInputs(float deltaTime, KeyState keystate)
     {
-        TimeStamp = timestamp;
+        DeltaTime = deltaTime;
         KeyState = new KeyState
         {
             Up = keystate.Up,
@@ -40,9 +37,9 @@ class LoopInputs
         };
 
     }
-    public LoopInputs(float timestamp, string values)
+    public LoopInputs(float deltaTime, string values)
     {
-        TimeStamp = timestamp;
+        DeltaTime = deltaTime;
         KeyState = new KeyState
         {
             Up = uint.Parse(values[0].ToString()),
@@ -52,7 +49,7 @@ class LoopInputs
             Shoot = int.Parse(values[4].ToString())
         };
     }
-    public float TimeStamp;
+    public float DeltaTime;
     public KeyState KeyState;
     private string keyStateString()
     {
@@ -60,7 +57,7 @@ class LoopInputs
     }
     public override string ToString()
     {
-        return TimeStamp.ToString() + " " + keyStateString();
+        return DeltaTime.ToString() + " " + keyStateString();
     }
 }
 
@@ -81,8 +78,9 @@ class Replay
     private string[] splitline;
     private string line;
     private int replaystep = 0;
-    public void updateInputs(Game game)
+    public void update(Game game)
     {
+        game.DeltaTime = inputs[replaystep].DeltaTime;
         if(replaystep >= inputs.Count)
         {
             game.KeyState.Close = 1;

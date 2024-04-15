@@ -253,12 +253,14 @@ class Game(int seed)
 
 #endif
 #if REPLAYING
-            replay.updateInputs(this);
+            replay.update(this);
             if (KeyState.Close > 0) Environment.Exit(0);
 #endif
+#if !Replaying
             float realDeltaTime = ((float)watch.ElapsedTicks / (float)Stopwatch.Frequency) * 1000;
             watch.Restart();
             DeltaTime = Math.Clamp(realDeltaTime, float.MinValue, 1000 / 60);
+#endif
             frameTimeBuffer.PushBack(realDeltaTime);
             // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
             SDL.SDL_SetWindowTitle(window, $"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
