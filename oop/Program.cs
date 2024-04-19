@@ -1,5 +1,7 @@
 ﻿#define RENDERING
-#define INPUT
+/* #define INPUT
+#define RECORDING */
+#define REPLAYING
 
 using System.Diagnostics;
 using System.Linq;
@@ -19,7 +21,7 @@ static class Program
     public const int WINDOW_Y = 800;
 
 
-    public static void Main()
+    public static void Main(string[] args)
     {
         Game game = new(69420);
 
@@ -170,8 +172,20 @@ class Game(int seed)
 
     public KeyState KeyState = new();
 
+#if RECORDING
+    public Recording record;
+#endif
+#if REPLAYING
+    public Replay replay;
+#endif
     public void Run()
     {
+#if RECORDING
+        record = new Recording();
+#endif
+#if REPLAYING
+        replay = new Replay("game");
+#endif
 #if RENDERING
         SDLTools.Assert(SDL.SDL_Init(SDL.SDL_INIT_VIDEO));
 
@@ -195,12 +209,12 @@ class Game(int seed)
         {
             // the code that you want to measure comes here
 #if INPUT
-            if (KeyState.Right > 0) KeyState.Right += 1;
+/*             if (KeyState.Right > 0) KeyState.Right += 1;
             if (KeyState.Left > 0) KeyState.Left += 1;
             if (KeyState.Up > 0) KeyState.Up += 1;
             if (KeyState.Down > 0) KeyState.Down += 1;
             if (KeyState.Close > 0) KeyState.Close += 1;
-            if (KeyState.Shoot > 0) KeyState.Shoot += 1;
+            if (KeyState.Shoot > 0) KeyState.Shoot += 1; */
 
             while (SDL.SDL_PollEvent(out SDL.SDL_Event e) != 0)
             {
@@ -226,16 +240,30 @@ class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot = 0;
                 }
             }
-
-
-
+#if !RECORDING
             if (KeyState.Close > 0) Environment.Exit(0);
 #endif
 
+#endif
+#if REPLAYING
+            replay.update(this);
+            if (KeyState.Close > 0) Environment.Exit(0);
+#endif
+#if !REPLAYING
             float realDeltaTime = ((float)watch.ElapsedTicks / (float)Stopwatch.Frequency) * 1000;
             watch.Restart();
             DeltaTime = Math.Clamp(realDeltaTime, float.MinValue, 1000 / 60);
             frameTimeBuffer.PushBack(realDeltaTime);
+#endif
+#if RECORDING
+            record.recordState(this);
+            if (KeyState.Close >0)
+            {
+                record.saveRecording();
+                Environment.Exit(0);
+            }
+
+#endif
             // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
             SDL.SDL_SetWindowTitle(window, $"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
             //update 
