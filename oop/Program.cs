@@ -1,6 +1,6 @@
 ﻿#define RENDERING
 #define INPUT
-#define RECORDING
+// #define RECORDING
 // #define REPLAYING
 
 using System.Diagnostics;
@@ -12,7 +12,6 @@ using Items;
 using System.Collections;
 using Weapons;
 using System.Reflection.Metadata;
-
 
 static class Program
 {
@@ -57,7 +56,8 @@ class KeyState
     public uint Left;
     public uint Right;
     public uint Close;
-    public int Shoot;
+    public uint Shoot;
+    public uint WeaponChoice;
 }
 struct Rect(float x, float y, float width, float height)
 {
@@ -228,6 +228,9 @@ class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s && KeyState.Down == 0) KeyState.Down = 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE && KeyState.Close == 0) KeyState.Close = 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e && KeyState.Shoot == 0) KeyState.Shoot = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_1 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_2 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 2;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_3 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 3;
                 }
 
                 if (e.type == SDL.SDL_EventType.SDL_KEYUP)
@@ -238,6 +241,9 @@ class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s) KeyState.Down = 0;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close = 0;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_1) KeyState.WeaponChoice = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_2) KeyState.WeaponChoice = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_3) KeyState.WeaponChoice = 0;
                 }
             }
 #if !RECORDING
@@ -341,9 +347,9 @@ class Game(int seed)
         var loot = new List<Item>();
         if (rng.Next(10) > 5)
             loot.Add(new HealthPack());
-        loot.Add(new ArrowBundle(rng.Next(1, 10)));
+        loot.Add(new ArrowBundle(rng.Next(1, 3)));
         loot.Add(new BoltBundle(rng.Next(1, 3)));
-        loot.Add(new ShellBox(rng.Next(1, 3) * 5));
+        loot.Add(new ShellBox(rng.Next(1, 3)));
         return loot;
     }
 }
@@ -391,10 +397,10 @@ class Player : GameObject
 {
     public Player()
     {
-        Weapons = [new Shotgun(), new Crossbow(),];
+        Weapons = [new Bow(), new Crossbow(), new Shotgun()];
+        CurrentWeapon = Weapons[0];
     }
-    public Weapon? CurrentWeapon => Weapons[currentWeapon]; // TODO: might throw if no weapons
-    private int currentWeapon = 0;
+    public Weapon? CurrentWeapon;
     private float attackCooldown = 0;
     public int MaxHP;
     public int HP;
@@ -412,10 +418,19 @@ class Player : GameObject
         if (Velocity.LengthSquared() > 0.0f) direction = Vector2.Normalize(Velocity);
 
         if (game.KeyState.Shoot == 1)
+        {
             if (attackCooldown <= 0)
             {
-                Weapons[currentWeapon].Attack(game, this);
+                CurrentWeapon.Attack(game, this);
             }
+        }
+        else switch(game.KeyState.WeaponChoice)
+        {
+            case 1: CurrentWeapon = Weapons[0]; break;
+            case 2: CurrentWeapon = Weapons[1]; break;
+            case 3: CurrentWeapon = Weapons[2]; break;
+            default: break;
+        }
         foreach (Weapon weapon in Weapons)
         {
             weapon.Update(game);

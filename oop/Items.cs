@@ -70,3 +70,29 @@ class ShellBox : AmmoBundle
         }
     }
 }
+
+class LootBox : GameObject
+{
+    public LootBox(List<Item> loot, GameObject spawner)
+    {
+        Color = 0xFFbf9000;
+        contents = [.. loot];
+        Position = spawner.Position;
+    }
+    List<Item> contents;
+    public override Circle Collider { get => new(Position.X, Position.Y, 5f); }
+    public override void OnCollision(Game game, GameObject other)
+    {
+        if (other is Player)
+        {
+            foreach (var item in contents)
+            {
+                item.OnPickup(game, other as Player);
+            }
+        }
+        if (!(other is Projectile))
+        {
+            game.Remove(this);
+        }
+    }
+}
