@@ -1,6 +1,6 @@
 ﻿#define RENDERING
-/* #define INPUT
-#define RECORDING */
+// #define INPUT
+// #define RECORDING
 #define REPLAYING
 
 using System.Diagnostics;
