@@ -47,6 +47,7 @@ public static class Program
         }
         Player player = new Player { Position = new Vector2(100, 100) };
         player.Collider.R = 12.5f;
+        player.Color = 0xFFFF00FF;
         game.Players.Add(player);
 
 
@@ -54,16 +55,45 @@ public static class Program
     }
 }
 
-public struct AxeMan
+public struct AxeMan()
 {
     public uint ID;
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
     public Vector2 Velocity;
+    public int MaxHP = 10;
+    public int HP;
+
     public static void OnRemove(Game game, AxeMan axeMan) { }
     public static void Update(Game game, ref AxeMan axeMan)
     {
+
+        float speed = 0.01f;
+        {
+
+            Player player = new();
+            try
+            {
+                player = game.Players[0];
+            }
+            catch
+            {
+                Console.WriteLine("no player");
+                Environment.Exit(-1);
+            }
+            Vector2 playerPos = player.Position;
+            axeMan.Velocity = Vector2.Normalize(playerPos - axeMan.Position) * speed;
+
+            axeMan.Color = SDLTools.ColorFromRGB(155 + (uint)(100 * (axeMan.HP / axeMan.MaxHP)), (uint)(100 * (axeMan.HP / axeMan.MaxHP)), (uint)(100 * (axeMan.HP / axeMan.MaxHP)));
+
+
+            {
+                axeMan.Position += axeMan.Velocity * game.DeltaTime;
+                axeMan.Velocity *= MathF.Pow(0.996f, game.DeltaTime); // drag
+            }
+        }
+
         foreach (AxeMan otherAxeMan in game.AxeMans)
         {
             if (otherAxeMan.ID != axeMan.ID && otherAxeMan.Collider.Overlaps(axeMan.Collider))
@@ -115,13 +145,16 @@ public struct AxeMan
         }
     }
 }
-public struct Slime
+public struct Slime()
 {
     public uint ID;
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
     public Vector2 Velocity;
+    public int MaxHP = 10;
+    public int HP;
+
     public static void OnRemove(Game game, Slime slime) { }
     public static void Update(Game game, ref Slime slime)
     {
@@ -179,12 +212,12 @@ public struct Slime
 public struct Player()
 {
     public uint ID;
-    public uint Color = 0xFFFF00FF;
+    public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
     public int CurrentWeapon { get; } //TODO: implement
     public Vector2 Direction { get; set; }
-    public List<Weapon> Weapons { get; private set; } = new();
+    public List<Weapon> Weapons { get; private set; } = [new Shotgun(), new Crossbow(),];
 
     public Vector2 Velocity;
     public int AttackCooldown;
@@ -320,16 +353,42 @@ public struct Shell
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
     public Vector2 Velocity;
+    public Vector2 Origin;
+    public Vector2 Direction;
+    public int Damage;
+    public float Speed;
+    public float RangeSquared;
+
     public static void OnRemove(Game game, Shell shell) { }
     public static void Update(Game game, ref Shell shell)
     {
-        foreach (AxeMan axeMan in game.AxeMans)
         {
-            if (shell.Collider.Overlaps(axeMan.Collider)) { }
+            if ((shell.Position - shell.Origin).LengthSquared() > shell.RangeSquared) game.RemoveShell(shell);
+            shell.Velocity = shell.Direction * shell.Speed;
+            shell.Position = shell.Position + shell.Velocity * game.DeltaTime;
+            shell.Velocity *= MathF.Pow(0.996f, game.DeltaTime); // drag
         }
-        foreach (Slime slime in game.Slimes)
+        for (int i = 0; i < game.AxeMans.Count; i++)
         {
-            if (shell.Collider.Overlaps(slime.Collider)) { }
+            AxeMan axeMan = game.AxeMans[i];
+            if (shell.Collider.Overlaps(axeMan.Collider))
+            {
+                axeMan.HP -= shell.Damage;
+                if (axeMan.HP <= 0) game.RemoveAxeMan(axeMan);
+                game.RemoveShell(shell);
+            }
+            game.AxeMans[i] = axeMan; //dealing with value struct memes this seems slow or somethign idk :shrug:
+        }
+        for (int i = 0; i < game.Slimes.Count; i++)
+        {
+            Slime slime = game.Slimes[i];
+            if (shell.Collider.Overlaps(slime.Collider))
+            {
+                slime.HP -= shell.Damage;
+                if (slime.HP <= 0) game.RemoveSlime(slime);
+                game.RemoveShell(shell);
+            }
+            game.Slimes[i] = slime; //dealing with value struct memes this seems slow or somethign idk :shrug:
         }
         foreach (Player player in game.Players)
         {
@@ -360,16 +419,41 @@ public struct Bolt
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
     public Vector2 Velocity;
+    public Vector2 Origin;
+    public Vector2 Direction;
+    public int Damage;
+    public float Speed;
+    public float RangeSquared;
     public static void OnRemove(Game game, Bolt bolt) { }
     public static void Update(Game game, ref Bolt bolt)
     {
-        foreach (AxeMan axeMan in game.AxeMans)
         {
-            if (bolt.Collider.Overlaps(axeMan.Collider)) { }
+            if ((bolt.Position - bolt.Origin).LengthSquared() > bolt.RangeSquared) game.RemoveBolt(bolt);
+            bolt.Velocity = bolt.Direction * bolt.Speed;
+            bolt.Position = bolt.Position + bolt.Velocity * game.DeltaTime;
+            bolt.Velocity *= MathF.Pow(0.996f, game.DeltaTime); // drag
         }
-        foreach (Slime slime in game.Slimes)
+        for (int i = 0; i < game.AxeMans.Count; i++)
         {
-            if (bolt.Collider.Overlaps(slime.Collider)) { }
+            AxeMan axeMan = game.AxeMans[i];
+            if (bolt.Collider.Overlaps(axeMan.Collider))
+            {
+                axeMan.HP -= bolt.Damage;
+                if (axeMan.HP <= 0) game.RemoveAxeMan(axeMan);
+                game.RemoveBolt(bolt);
+            }
+            game.AxeMans[i] = axeMan; //dealing with value struct memes this seems slow or somethign idk :shrug:
+        }
+        for (int i = 0; i < game.Slimes.Count; i++)
+        {
+            Slime slime = game.Slimes[i];
+            if (bolt.Collider.Overlaps(slime.Collider))
+            {
+                slime.HP -= bolt.Damage;
+                if (slime.HP <= 0) game.RemoveSlime(slime);
+                game.RemoveBolt(bolt);
+            }
+            game.Slimes[i] = slime; //dealing with value struct memes this seems slow or somethign idk :shrug:
         }
         foreach (Player player in game.Players)
         {
@@ -400,16 +484,41 @@ public struct Arrow
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
     public Vector2 Velocity;
+    public Vector2 Origin;
+    public Vector2 Direction;
+    public int Damage;
+    public float Speed;
+    public float RangeSquared;
     public static void OnRemove(Game game, Arrow arrow) { }
     public static void Update(Game game, ref Arrow arrow)
     {
-        foreach (AxeMan axeMan in game.AxeMans)
         {
-            if (arrow.Collider.Overlaps(axeMan.Collider)) { }
+            if ((arrow.Position - arrow.Origin).LengthSquared() > arrow.RangeSquared) game.RemoveArrow(arrow);
+            arrow.Velocity = arrow.Direction * arrow.Speed;
+            arrow.Position = arrow.Position + arrow.Velocity * game.DeltaTime;
+            arrow.Velocity *= MathF.Pow(0.996f, game.DeltaTime); // drag
         }
-        foreach (Slime slime in game.Slimes)
+        for (int i = 0; i < game.AxeMans.Count; i++)
         {
-            if (arrow.Collider.Overlaps(slime.Collider)) { }
+            AxeMan axeMan = game.AxeMans[i];
+            if (arrow.Collider.Overlaps(axeMan.Collider))
+            {
+                axeMan.HP -= arrow.Damage;
+                if (axeMan.HP <= 0) game.RemoveAxeMan(axeMan);
+                game.RemoveArrow(arrow);
+            }
+            game.AxeMans[i] = axeMan; //dealing with value struct memes this seems slow or somethign idk :shrug:
+        }
+        for (int i = 0; i < game.Slimes.Count; i++)
+        {
+            Slime slime = game.Slimes[i];
+            if (arrow.Collider.Overlaps(slime.Collider))
+            {
+                slime.HP -= arrow.Damage;
+                if (slime.HP <= 0) game.RemoveSlime(slime);
+                game.RemoveArrow(arrow);
+            }
+            game.Slimes[i] = slime; //dealing with value struct memes this seems slow or somethign idk :shrug:
         }
         foreach (Player player in game.Players)
         {
@@ -672,38 +781,31 @@ public class Game(int seed)
 
             foreach (AxeMan axeMan in AxeMans)
             {
-                var color = axeMan.Color;
-                axeMan.Collider.Render(renderer, color);
+                axeMan.Collider.Render(renderer, axeMan.Color);
             }
             foreach (Slime slime in Slimes)
             {
-                var color = slime.Color;
-                slime.Collider.Render(renderer, color);
+                slime.Collider.Render(renderer, slime.Color);
             }
             foreach (Player player in Players)
             {
-                var color = player.Color;
-                player.Collider.Render(renderer, color);
+                player.Collider.Render(renderer, player.Color);
             }
             foreach (LootBox lootBox in LootBoxs)
             {
-                var color = lootBox.Color;
-                lootBox.Collider.Render(renderer, color);
+                lootBox.Collider.Render(renderer, lootBox.Color);
             }
             foreach (Shell shell in Shells)
             {
-                var color = shell.Color;
-                shell.Collider.Render(renderer, color);
+                shell.Collider.Render(renderer, shell.Color);
             }
             foreach (Bolt bolt in Bolts)
             {
-                var color = bolt.Color;
-                bolt.Collider.Render(renderer, color);
+                bolt.Collider.Render(renderer, bolt.Color);
             }
             foreach (Arrow arrow in Arrows)
             {
-                var color = arrow.Color;
-                arrow.Collider.Render(renderer, color);
+                arrow.Collider.Render(renderer, arrow.Color);
             }
 
             { //scope (for name "player"), refactor out whenever
@@ -713,19 +815,19 @@ public class Game(int seed)
                     Player player = Players[0];
                     {
                         SDLTools.SetRenderDrawColor(renderer, 0xFFFFFFFF); //TEMP
-                        // if (player.CurrentWeapon.RemainingCooldown > 0)
-                        // {
-                        //     SDLTools.SetRenderDrawColor(renderer, 0xFFFF0000);
-                        // }
-                        // else
-                        // {
-                        //     SDLTools.SetRenderDrawColor(renderer, 0xFFFFFFFF);
-                        // }
-                        // for (int i = 0; i < player.CurrentWeapon.Ammo; i++)
-                        // {
-                        //     var rect2 = new SDL.SDL_Rect { x = 10 + i * 20, y = 10, w = 10, h = 10 };
-                        //     SDLTools.Assert(SDL.SDL_RenderFillRect(renderer, ref rect2));
-                        // }
+                        if (player.Weapons[player.CurrentWeapon].RemainingCooldown > 0)
+                        {
+                            SDLTools.SetRenderDrawColor(renderer, 0xFFFF0000);
+                        }
+                        else
+                        {
+                            SDLTools.SetRenderDrawColor(renderer, 0xFFFFFFFF);
+                        }
+                        for (int i = 0; i < player.Weapons[player.CurrentWeapon].Ammo; i++)
+                        {
+                            var rect2 = new SDL.SDL_Rect { x = 10 + i * 20, y = 10, w = 10, h = 10 };
+                            SDLTools.Assert(SDL.SDL_RenderFillRect(renderer, ref rect2));
+                        }
                         int dirIndicatorScale = 10;
                         SDL.SDL_RenderDrawLine(renderer, (int)(player.Position.X), (int)(player.Position.Y), (int)(player.Position.X + player.Direction.X * dirIndicatorScale), (int)(player.Position.Y + player.Direction.Y * dirIndicatorScale));
                     }
@@ -789,6 +891,92 @@ public abstract class Weapon
     public void Update(Game game)
     {
         RemainingCooldown -= game.DeltaTime;
+    }
+}
+
+class Axe : Weapon
+{
+    public override int Range => 1;
+    public override int Damage => 5;
+    public override float Cooldown => 2;
+}
+
+class Bow : Weapon
+{
+    public Bow()
+    {
+        Ammo = 10;
+    }
+    public override int Range => 10;
+    public override int Damage => 3;
+    public override float Cooldown => 1000;
+    public override void Attack(Game game, Player player)
+    {
+        if (Ammo > 0 && RemainingCooldown <= 0)
+        {
+            Ammo--;
+            game.SpawnArrow(new Arrow { Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFF00FFFF, Collider = new Circle(player.Position.X, player.Position.Y, 5f), Speed = 0.5f });
+            base.Attack(game, player);
+        }
+    }
+}
+
+class Crossbow : Weapon
+{
+    public Crossbow()
+    {
+        Ammo = 5;
+    }
+    public override int Range => 15;
+    public override int Damage => 10;
+    public override float Cooldown => 3000;
+    public override void Attack(Game game, Player player)
+    {
+        if (Ammo > 0 && RemainingCooldown <= 0)
+        {
+            Ammo--;
+            game.SpawnBolt(new Bolt { Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFF00FFFF, Collider = new Circle(player.Position.X, player.Position.Y, 5f), Speed = 0.5f });
+            base.Attack(game, player);
+        }
+    }
+}
+
+class Shotgun : Weapon
+{
+    public Shotgun()
+    {
+        Ammo = 25;
+        angleBetweenShots = -(2 * startAngle / (numberShots - 1));
+    }
+    private Vector2 shotDirection;
+    private Vector2 tempDirection;
+    private float startAngle = 0.5f;
+    private float angleBetweenShots;
+    public int numberShots = 5;
+    public override int Range => 5;
+    public override int Damage => 7;
+    public override float Cooldown => 4000;
+    public override void Attack(Game game, Player player)
+    {
+        if (Ammo >= numberShots && RemainingCooldown <= 0)
+        {
+            Ammo -= numberShots;
+            shotDirection = player.Direction;
+            /* Have to use temp variable, because assigning X would change the result of Y */
+            tempDirection.X = MathF.Cos(startAngle) * shotDirection.X - MathF.Sin(startAngle) * shotDirection.Y;
+            tempDirection.Y = MathF.Sin(startAngle) * shotDirection.X + MathF.Cos(startAngle) * shotDirection.Y;
+            shotDirection = tempDirection;
+            game.SpawnShell(new Shell { Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF00FFFF, Collider = new Circle(player.Position.X, player.Position.Y, 5f), Speed = 0.5f });
+            for (int i = 1; i < numberShots; i++)
+            {
+                tempDirection.X = MathF.Cos(angleBetweenShots) * shotDirection.X - MathF.Sin(angleBetweenShots) * shotDirection.Y;
+                tempDirection.Y = MathF.Sin(angleBetweenShots) * shotDirection.X + MathF.Cos(angleBetweenShots) * shotDirection.Y;
+                shotDirection = tempDirection;
+                game.SpawnShell(new Shell { Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF00FFFF, Collider = new Circle(player.Position.X, player.Position.Y, 5f), Speed = 0.5f });
+                Console.WriteLine(shotDirection);
+            }
+            base.Attack(game, player);
+        }
     }
 }
 
