@@ -35,7 +35,7 @@ class Bow : Weapon
         Ammo = 10;
     }
     public override int Range => 10;
-    public override int Damage => 3;
+    public override int Damage => 25;
     public override float Cooldown => 1000;
     public override void Attack(Game game, Player player)
     {
@@ -100,7 +100,6 @@ class Shotgun : Weapon
                 tempDirection.Y = MathF.Sin(angleBetweenShots) * shotDirection.X + MathF.Cos(angleBetweenShots) * shotDirection.Y;
                 shotDirection = tempDirection;
                 game.Spawn(new Shell(player.Position, shotDirection, Damage));
-                Console.WriteLine(shotDirection);
             }
             base.Attack(game, player);
         }

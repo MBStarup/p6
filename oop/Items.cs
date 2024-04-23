@@ -10,7 +10,7 @@ class HealthPack : Item
 {
     public override void OnPickup(Game game, Player player)
     {
-        player.HP += 25;
+        player.HP = Math.Min(player.HP+250,Player.MaxHP);
     }
 }
 

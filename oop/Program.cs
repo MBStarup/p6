@@ -402,8 +402,8 @@ class Player : GameObject
     }
     public Weapon? CurrentWeapon;
     private float attackCooldown = 0;
-    public int MaxHP;
-    public int HP;
+    public const int MaxHP = 1000;
+    public int HP = MaxHP;
     public List<Weapon> Weapons;
     public Vector2 direction = new(1, 0);
     public override void Update(Game game)
@@ -457,18 +457,27 @@ abstract class Enemy : GameObject
         HP = MaxHP;
     }
     public virtual int MaxHP{ get; }
+    public virtual int Damage{ get;}
     public int HP;
     public List<Item> Loot;
     public override void OnRemoval(Game game)
     {
         game.Spawn(new LootBox(Loot, this));
     }
-
+    Player target;
     public override void OnCollision(Game game, GameObject other)
     {
         if (other is LootBox)
         {
             game.Remove(other);
+        }
+        if ((target = other as Player) != null)
+        {
+            target.HP -= Damage;
+            if (target.HP <= 0)
+            {
+                game.Remove(target);
+            }
         }
         while (this.Collider.Overlaps(other.Collider))
         {
@@ -479,10 +488,8 @@ abstract class Enemy : GameObject
     public void TakeDamageFrom(Game game, Projectile projectile)
     {
         HP -= projectile.Damage;
-        System.Console.WriteLine(this.GetType().ToString() + " took " + projectile.Damage + " damage, and is now at " + HP + " HP!");
         if (HP <= 0)
         {
-            System.Console.WriteLine("and then it died.");
             game.Remove(this);
         }
     }
@@ -496,6 +503,7 @@ class AxeMan : Enemy
         Color = 0xFFFF0000;
     }
     public override int MaxHP => 21;
+    public override int Damage => 3;
     public override void Update(Game game)
     {
         // track player
@@ -517,4 +525,5 @@ class Slime : Enemy
         Color = 0xFF00FF00;
     }
     public override int MaxHP => 5;
+    public override int Damage => 1;
 }
