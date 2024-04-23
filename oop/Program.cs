@@ -1,7 +1,7 @@
 ﻿#define RENDERING
-/* #define INPUT
-#define RECORDING */
-#define REPLAYING
+#define INPUT
+#define RECORDING
+// #define REPLAYING
 
 using System.Diagnostics;
 using System.Linq;
@@ -266,7 +266,7 @@ class Game(int seed)
 #endif
             // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
             SDL.SDL_SetWindowTitle(window, $"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
-            //update 
+            //update
             foreach (var gameObject in GameObjects)
             {
                 //update
@@ -434,18 +434,15 @@ class Player : GameObject
     }
 }
 
-abstract class NPC : GameObject
-{
-    public const int MaxHP = 21;
-    public int HP = MaxHP;
-}
-
-abstract class Enemy : NPC
+abstract class Enemy : GameObject
 {
     public Enemy(List<Item> loot)
     {
         Loot = loot;
+        HP = MaxHP;
     }
+    public virtual int MaxHP{ get; }
+    public int HP;
     public List<Item> Loot;
     public override void OnRemoval(Game game)
     {
@@ -483,8 +480,7 @@ class AxeMan : Enemy
     {
         Color = 0xFFFF0000;
     }
-
-
+    public override int MaxHP => 21;
     public override void Update(Game game)
     {
         // track player
@@ -492,8 +488,9 @@ class AxeMan : Enemy
         var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? new(0.0f, 0.0f);
         Velocity = Vector2.Normalize(playerPos - Position) * speed;
 
+#if RENDERING
         Color = SDLTools.ColorFromRGB(155 + (uint)(100 * (HP / MaxHP)), (uint)(100 * (HP / MaxHP)), (uint)(100 * (HP / MaxHP)));
-
+#endif
         base.Update(game);
     }
 }
@@ -504,4 +501,5 @@ class Slime : Enemy
     {
         Color = 0xFF00FF00;
     }
+    public override int MaxHP => 5;
 }
