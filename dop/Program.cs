@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Numerics;
 using SDL2;
 using CircularBuffer;
+using System.ComponentModel.DataAnnotations;
+using System.IO.Compression;
 
 
 
@@ -65,7 +67,10 @@ public struct AxeMan()
     public int MaxHP = 10;
     public int HP;
 
-    public static void OnRemove(Game game, AxeMan axeMan) { }
+    public static void OnRemove(Game game, AxeMan axeMan)
+    {
+        game.SpawnLootBox(new LootBox { Collider = new Circle(axeMan.Position.X, axeMan.Position.Y, 7f), Color = 0xFFFFFF00, Health = 25, Shells = 10, Bolts = 3, Arrows = 5 });
+    }
     public static void Update(Game game, ref AxeMan axeMan)
     {
 
@@ -221,6 +226,8 @@ public struct Player()
 
     public Vector2 Velocity;
     public int AttackCooldown;
+    public int HP;
+    public int MaxHP;
 
     public static void OnRemove(Game game, Player player) { }
     public static void Update(Game game, ref Player player)
@@ -313,20 +320,38 @@ public struct LootBox
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
     public Vector2 Velocity;
+    public int Health;
+    public int Shells;
+    public int Bolts;
+    public int Arrows;
+
+
     public static void OnRemove(Game game, LootBox lootBox) { }
     public static void Update(Game game, ref LootBox lootBox)
     {
         foreach (AxeMan axeMan in game.AxeMans)
         {
-            if (lootBox.Collider.Overlaps(axeMan.Collider)) { }
+            if (lootBox.Collider.Overlaps(axeMan.Collider)) { game.RemoveLootBox(lootBox); }
         }
         foreach (Slime slime in game.Slimes)
         {
-            if (lootBox.Collider.Overlaps(slime.Collider)) { }
+            if (lootBox.Collider.Overlaps(slime.Collider)) { game.RemoveLootBox(lootBox); }
         }
-        foreach (Player player in game.Players)
+        for (int i = 0; i < game.Players.Count; i++)
         {
-            if (lootBox.Collider.Overlaps(player.Collider)) { }
+            Player player = game.Players[i];
+            if (lootBox.Collider.Overlaps(player.Collider))
+            {
+                player.HP = Math.Max(player.HP + lootBox.Health, player.MaxHP);
+                foreach (Weapon weapon in player.Weapons)
+                {
+                    if (weapon is Shotgun s) s.Ammo += lootBox.Shells;
+                    else if (weapon is Crossbow c) c.Ammo += lootBox.Bolts;
+                    else if (weapon is Bow b) b.Ammo += lootBox.Arrows;
+                }
+                game.RemoveLootBox(lootBox);
+            }
+            game.Players[i] = player;
         }
         foreach (LootBox otherLootBox in game.LootBoxs)
         {
