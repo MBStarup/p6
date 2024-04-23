@@ -129,13 +129,10 @@ public struct Slime
         {
             if (slime.Collider.Overlaps(axeMan.Collider))
             {
-                if (slime.Collider.Overlaps(axeMan.Collider))
+                while (slime.Collider.Overlaps(axeMan.Collider))
                 {
-                    while (slime.Collider.Overlaps(axeMan.Collider))
-                    {
-                        var direction = Vector2.Normalize(slime.Collider.Center - axeMan.Collider.Center);
-                        slime.Position += new Vector2(direction.X, direction.Y) * 0.1f;
-                    }
+                    var direction = Vector2.Normalize(slime.Collider.Center - axeMan.Collider.Center);
+                    slime.Position += new Vector2(direction.X, direction.Y) * 0.1f;
                 }
             }
         }
@@ -143,13 +140,10 @@ public struct Slime
         {
             if (otherSlime.ID != slime.ID && otherSlime.Collider.Overlaps(slime.Collider))
             {
-                if (slime.Collider.Overlaps(otherSlime.Collider))
+                while (slime.Collider.Overlaps(otherSlime.Collider))
                 {
-                    while (slime.Collider.Overlaps(otherSlime.Collider))
-                    {
-                        var direction = Vector2.Normalize(slime.Collider.Center - otherSlime.Collider.Center);
-                        slime.Position += new Vector2(direction.X, direction.Y) * 0.1f;
-                    }
+                    var direction = Vector2.Normalize(slime.Collider.Center - otherSlime.Collider.Center);
+                    slime.Position += new Vector2(direction.X, direction.Y) * 0.1f;
                 }
             }
         }
@@ -157,13 +151,10 @@ public struct Slime
         {
             if (slime.Collider.Overlaps(player.Collider))
             {
-                if (slime.Collider.Overlaps(player.Collider))
+                while (slime.Collider.Overlaps(player.Collider))
                 {
-                    while (slime.Collider.Overlaps(player.Collider))
-                    {
-                        var direction = Vector2.Normalize(slime.Collider.Center - player.Collider.Center);
-                        slime.Position += new Vector2(direction.X, direction.Y) * 0.1f;
-                    }
+                    var direction = Vector2.Normalize(slime.Collider.Center - player.Collider.Center);
+                    slime.Position += new Vector2(direction.X, direction.Y) * 0.1f;
                 }
             }
         }
@@ -233,16 +224,10 @@ public struct Player()
         {
             if (player.Collider.Overlaps(axeMan.Collider))
             {
-                if (player.Collider.Overlaps(axeMan.Collider))
+                while (player.Collider.Overlaps(axeMan.Collider))
                 {
-                    if (player.Collider.Overlaps(axeMan.Collider))
-                    {
-                        while (player.Collider.Overlaps(axeMan.Collider))
-                        {
-                            var direction = Vector2.Normalize(player.Collider.Center - axeMan.Collider.Center);
-                            player.Position += new Vector2(direction.X, direction.Y) * 0.1f;
-                        }
-                    }
+                    var direction = Vector2.Normalize(player.Collider.Center - axeMan.Collider.Center);
+                    player.Position += new Vector2(direction.X, direction.Y) * 0.1f;
                 }
             }
         }
@@ -250,16 +235,10 @@ public struct Player()
         {
             if (player.Collider.Overlaps(slime.Collider))
             {
-                if (player.Collider.Overlaps(slime.Collider))
+                while (player.Collider.Overlaps(slime.Collider))
                 {
-                    if (player.Collider.Overlaps(slime.Collider))
-                    {
-                        while (player.Collider.Overlaps(slime.Collider))
-                        {
-                            var direction = Vector2.Normalize(player.Collider.Center - slime.Collider.Center);
-                            player.Position += new Vector2(direction.X, direction.Y) * 0.1f;
-                        }
-                    }
+                    var direction = Vector2.Normalize(player.Collider.Center - slime.Collider.Center);
+                    player.Position += new Vector2(direction.X, direction.Y) * 0.1f;
                 }
             }
         }
@@ -267,16 +246,10 @@ public struct Player()
         {
             if (otherPlayer.ID != player.ID && otherPlayer.Collider.Overlaps(player.Collider))
             {
-                if (player.Collider.Overlaps(otherPlayer.Collider))
+                while (player.Collider.Overlaps(otherPlayer.Collider))
                 {
-                    if (player.Collider.Overlaps(otherPlayer.Collider))
-                    {
-                        while (player.Collider.Overlaps(otherPlayer.Collider))
-                        {
-                            var direction = Vector2.Normalize(player.Collider.Center - otherPlayer.Collider.Center);
-                            player.Position += new Vector2(direction.X, direction.Y) * 0.1f;
-                        }
-                    }
+                    var direction = Vector2.Normalize(player.Collider.Center - otherPlayer.Collider.Center);
+                    player.Position += new Vector2(direction.X, direction.Y) * 0.1f;
                 }
             }
         }
