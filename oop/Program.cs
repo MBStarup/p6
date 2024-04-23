@@ -1,7 +1,7 @@
 ﻿#define RENDERING
-// #define INPUT
+#define INPUT
 // #define RECORDING
-#define REPLAYING
+// #define REPLAYING
 
 using System.Diagnostics;
 using System.Linq;
