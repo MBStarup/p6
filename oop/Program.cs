@@ -22,6 +22,8 @@ static class Program
 
     public static void Main(string[] args)
     {
+        string path = args[0];
+
         Game game = new(69420);
 
         // setup the "scene"
@@ -45,7 +47,7 @@ static class Program
         }
         game.GameObjects.Add(new Player { Position = new Vector2(100, 100) });
 
-        game.Run();
+        game.Run(path);
     }
 }
 
@@ -178,13 +180,13 @@ class Game(int seed)
 #if REPLAYING
     public Replay replay;
 #endif
-    public void Run()
+    public void Run(string ReplayPath = "")
     {
 #if RECORDING
         record = new Recording();
 #endif
 #if REPLAYING
-        replay = new Replay("game");
+        replay = new Replay(ReplayPath);
 #endif
 #if RENDERING
         SDLTools.Assert(SDL.SDL_Init(SDL.SDL_INIT_VIDEO));
