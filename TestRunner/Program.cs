@@ -8,7 +8,7 @@ class Program
         // Process.Start("perf",  "stat report");
         Process perf = new Process();
         ProcessStartInfo perfStartInfo = new ProcessStartInfo("perf");
-        perfStartInfo.Arguments = ("stat -e \"power/energy-cores/\" -a /home/blitzcrank/p6/TestRunner/oop");
+        perfStartInfo.Arguments = ("stat -e \"power/energy-cores/\" -a /home/blitzcrank/p6/oop/bin/Release/net8.0/oop");
         perfStartInfo.UseShellExecute = false;
         perfStartInfo.RedirectStandardError = true;
         perf.StartInfo = perfStartInfo;
@@ -33,6 +33,7 @@ class MeasurementResults
     public MeasurementResults(string perfString)
     {
         MatchCollection matches = regex.Matches(perfString);
+        
         Energy = double.Parse(matches[0].Value);
         Seconds = double.Parse(matches[1].Value);
     }
