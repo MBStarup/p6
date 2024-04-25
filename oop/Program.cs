@@ -1,7 +1,7 @@
 ﻿#define RENDERING
-#define INPUT
-#define RECORDING
-// #define REPLAYING
+// #define INPUT
+// #define RECORDING
+#define REPLAYING
 
 using System.Diagnostics;
 using System.Linq;
@@ -22,7 +22,11 @@ static class Program
 
     public static void Main(string[] args)
     {
-        string path = args[0];
+        string path = "";
+        if(args.Length != 0)
+        {
+            path = args[0];
+        }
 
         Game game = new(69420);
 
