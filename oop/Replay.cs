@@ -33,7 +33,8 @@ class LoopInputs
             Down = keystate.Down,
             Left = keystate.Left,
             Right = keystate.Right,
-            Shoot = keystate.Shoot
+            Shoot = keystate.Shoot,
+            WeaponChoice = keystate.WeaponChoice
         };
 
     }
@@ -46,14 +47,16 @@ class LoopInputs
             Down = uint.Parse(values[1].ToString()),
             Left = uint.Parse(values[2].ToString()),
             Right = uint.Parse(values[3].ToString()),
-            Shoot = int.Parse(values[4].ToString())
+            Shoot = uint.Parse(values[4].ToString()),
+            WeaponChoice = uint.Parse(values[5].ToString())
         };
     }
     public float DeltaTime;
     public KeyState KeyState;
     private string keyStateString()
     {
-        return KeyState.Up.ToString() + KeyState.Down.ToString() + KeyState.Left.ToString() + KeyState.Right.ToString() + KeyState.Shoot.ToString();
+        return KeyState.Up.ToString() + KeyState.Down.ToString() + KeyState.Left.ToString() + KeyState.Right.ToString() + KeyState.Shoot.ToString() + 
+        KeyState.WeaponChoice.ToString();
     }
     public override string ToString()
     {
@@ -87,11 +90,7 @@ class Replay
         else
         {
             game.DeltaTime = inputs[replaystep].DeltaTime;
-            game.KeyState.Up = inputs[replaystep].KeyState.Up;
-            game.KeyState.Down = inputs[replaystep].KeyState.Down;
-            game.KeyState.Left = inputs[replaystep].KeyState.Left;
-            game.KeyState.Right = inputs[replaystep].KeyState.Right;
-            game.KeyState.Shoot = inputs[replaystep].KeyState.Shoot;
+            game.KeyState = inputs[replaystep].KeyState;
             replaystep++;
         }
     }

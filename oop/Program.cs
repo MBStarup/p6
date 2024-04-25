@@ -13,7 +13,6 @@ using System.Collections;
 using Weapons;
 using System.Reflection.Metadata;
 
-
 static class Program
 {
     // honestly move these, just wanted them somewhere "global" for the random spawning to use them
@@ -57,7 +56,8 @@ class KeyState
     public uint Left;
     public uint Right;
     public uint Close;
-    public int Shoot;
+    public uint Shoot;
+    public uint WeaponChoice;
 }
 struct Rect(float x, float y, float width, float height)
 {
@@ -228,6 +228,9 @@ class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s && KeyState.Down == 0) KeyState.Down = 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE && KeyState.Close == 0) KeyState.Close = 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e && KeyState.Shoot == 0) KeyState.Shoot = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_1 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_2 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 2;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_3 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 3;
                 }
 
                 if (e.type == SDL.SDL_EventType.SDL_KEYUP)
@@ -238,6 +241,9 @@ class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s) KeyState.Down = 0;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close = 0;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_1) KeyState.WeaponChoice = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_2) KeyState.WeaponChoice = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_3) KeyState.WeaponChoice = 0;
                 }
             }
 #if !RECORDING
@@ -266,7 +272,7 @@ class Game(int seed)
 #endif
             // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
             SDL.SDL_SetWindowTitle(window, $"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
-            //update 
+            //update
             foreach (var gameObject in GameObjects)
             {
                 //update
@@ -341,9 +347,9 @@ class Game(int seed)
         var loot = new List<Item>();
         if (rng.Next(10) > 5)
             loot.Add(new HealthPack());
-        loot.Add(new ArrowBundle(rng.Next(1, 10)));
+        loot.Add(new ArrowBundle(rng.Next(1, 3)));
         loot.Add(new BoltBundle(rng.Next(1, 3)));
-        loot.Add(new ShellBox(rng.Next(1, 3) * 5));
+        loot.Add(new ShellBox(rng.Next(1, 3)));
         return loot;
     }
 }
@@ -391,13 +397,13 @@ class Player : GameObject
 {
     public Player()
     {
-        Weapons = [new Shotgun(), new Crossbow(),];
+        Weapons = [new Bow(), new Crossbow(), new Shotgun()];
+        CurrentWeapon = Weapons[0];
     }
-    public Weapon? CurrentWeapon => Weapons[currentWeapon]; // TODO: might throw if no weapons
-    private int currentWeapon = 0;
+    public Weapon? CurrentWeapon;
     private float attackCooldown = 0;
-    public int MaxHP;
-    public int HP;
+    public const int MaxHP = 1000;
+    public int HP = MaxHP;
     public List<Weapon> Weapons;
     public Vector2 direction = new(1, 0);
     public override void Update(Game game)
@@ -412,10 +418,19 @@ class Player : GameObject
         if (Velocity.LengthSquared() > 0.0f) direction = Vector2.Normalize(Velocity);
 
         if (game.KeyState.Shoot == 1)
+        {
             if (attackCooldown <= 0)
             {
-                Weapons[currentWeapon].Attack(game, this);
+                CurrentWeapon.Attack(game, this);
             }
+        }
+        else switch(game.KeyState.WeaponChoice)
+        {
+            case 1: CurrentWeapon = Weapons[0]; break;
+            case 2: CurrentWeapon = Weapons[1]; break;
+            case 3: CurrentWeapon = Weapons[2]; break;
+            default: break;
+        }
         foreach (Weapon weapon in Weapons)
         {
             weapon.Update(game);
@@ -434,29 +449,35 @@ class Player : GameObject
     }
 }
 
-abstract class NPC : GameObject
-{
-    public const int MaxHP = 21;
-    public int HP = MaxHP;
-}
-
-abstract class Enemy : NPC
+abstract class Enemy : GameObject
 {
     public Enemy(List<Item> loot)
     {
         Loot = loot;
+        HP = MaxHP;
     }
+    public virtual int MaxHP{ get; }
+    public virtual int Damage{ get;}
+    public int HP;
     public List<Item> Loot;
     public override void OnRemoval(Game game)
     {
         game.Spawn(new LootBox(Loot, this));
     }
-
+    Player target;
     public override void OnCollision(Game game, GameObject other)
     {
         if (other is LootBox)
         {
             game.Remove(other);
+        }
+        if ((target = other as Player) != null)
+        {
+            target.HP -= Damage;
+            if (target.HP <= 0)
+            {
+                game.Remove(target);
+            }
         }
         while (this.Collider.Overlaps(other.Collider))
         {
@@ -467,10 +488,8 @@ abstract class Enemy : NPC
     public void TakeDamageFrom(Game game, Projectile projectile)
     {
         HP -= projectile.Damage;
-        System.Console.WriteLine(this.GetType().ToString() + " took " + projectile.Damage + " damage, and is now at " + HP + " HP!");
         if (HP <= 0)
         {
-            System.Console.WriteLine("and then it died.");
             game.Remove(this);
         }
     }
@@ -483,8 +502,8 @@ class AxeMan : Enemy
     {
         Color = 0xFFFF0000;
     }
-
-
+    public override int MaxHP => 21;
+    public override int Damage => 3;
     public override void Update(Game game)
     {
         // track player
@@ -492,8 +511,9 @@ class AxeMan : Enemy
         var playerPos = game.GameObjects.FirstOrDefault(x => x is Player, null)?.Position ?? new(0.0f, 0.0f);
         Velocity = Vector2.Normalize(playerPos - Position) * speed;
 
+#if RENDERING
         Color = SDLTools.ColorFromRGB(155 + (uint)(100 * (HP / MaxHP)), (uint)(100 * (HP / MaxHP)), (uint)(100 * (HP / MaxHP)));
-
+#endif
         base.Update(game);
     }
 }
@@ -504,4 +524,6 @@ class Slime : Enemy
     {
         Color = 0xFF00FF00;
     }
+    public override int MaxHP => 5;
+    public override int Damage => 1;
 }

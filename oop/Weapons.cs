@@ -21,12 +21,12 @@ abstract class Weapon
     }
 }
 
-class Axe : Weapon
+/* class Axe : Weapon
 {
     public override int Range => 1;
     public override int Damage => 5;
     public override float Cooldown => 2;
-}
+} */
 
 class Bow : Weapon
 {
@@ -35,7 +35,7 @@ class Bow : Weapon
         Ammo = 10;
     }
     public override int Range => 10;
-    public override int Damage => 3;
+    public override int Damage => 25;
     public override float Cooldown => 1000;
     public override void Attack(Game game, Player player)
     {
@@ -100,35 +100,8 @@ class Shotgun : Weapon
                 tempDirection.Y = MathF.Sin(angleBetweenShots) * shotDirection.X + MathF.Cos(angleBetweenShots) * shotDirection.Y;
                 shotDirection = tempDirection;
                 game.Spawn(new Shell(player.Position, shotDirection, Damage));
-                Console.WriteLine(shotDirection);
             }
             base.Attack(game, player);
-        }
-    }
-}
-
-class LootBox : GameObject
-{
-    public LootBox(List<Item> loot, GameObject spawner)
-    {
-        Color = 0xFFbf9000;
-        contents = [.. loot];
-        Position = spawner.Position;
-    }
-    List<Item> contents;
-    public override Circle Collider { get => new(Position.X, Position.Y, 5f); }
-    public override void OnCollision(Game game, GameObject other)
-    {
-        if (other is Player)
-        {
-            foreach (var item in contents)
-            {
-                item.OnPickup(game, other as Player);
-            }
-        }
-        if (!(other is Projectile))
-        {
-            game.Remove(this);
         }
     }
 }
