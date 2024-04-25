@@ -1,4 +1,4 @@
-﻿#define RENDERING
+﻿// #define RENDERING
 // #define INPUT
 // #define RECORDING
 #define REPLAYING
@@ -277,7 +277,9 @@ class Game(int seed)
 
 #endif
             // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
+#if RENDERING
             SDL.SDL_SetWindowTitle(window, $"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
+#endif
             //update
             foreach (var gameObject in GameObjects)
             {
