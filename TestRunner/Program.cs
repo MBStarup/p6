@@ -14,18 +14,22 @@ class Program
         perfStartInfo.RedirectStandardError = true;
         perf.StartInfo = perfStartInfo;
         List<MeasurementResults> results = new List<MeasurementResults>();
-        for(int i = 0; i<1; i++)
+        for(int i = 0; i<100; i++)
         {
             perf.Start();
             StreamReader reader = perf.StandardError;
             string output = reader.ReadToEnd();
             results.Add(new MeasurementResults(output));
         }
-        Console.WriteLine("Cache refs | Cache misses / Energy | Time");
-        foreach(var m in results)
+
+        DateTime time = DateTime.Now;
+        StreamWriter writer = new StreamWriter("../Measurements/" + time.ToString("yyMMddH"));
+        writer.WriteLine("CacheRefs;CacheMisses;Energy(J);time(s)");
+        foreach(var measurement in results)
         {
-            Console.WriteLine(m.CacheRefs + " | " + m.CacheMisses + " / " + m.Energy + " | " + m.Seconds);
+            writer.WriteLine(measurement.ToString());
         }
+        writer.Close();
     }
 }
 
@@ -35,8 +39,6 @@ class MeasurementResults
     {
         MatchCollection matchesINT = INTRegex.Matches(perfString);
         MatchCollection matchesFP = FPRegex.Matches(perfString);
-        Console.WriteLine(matchesINT[0]);
-        Console.WriteLine(matchesINT[1]);
 
         CacheRefs = int.Parse(matchesINT[0].Value, NumberStyles.AllowThousands);
         CacheMisses = int.Parse(matchesINT[1].Value, NumberStyles.AllowThousands);
@@ -50,5 +52,8 @@ class MeasurementResults
     public double Seconds;
     public int CacheRefs;
     public int CacheMisses;
-
+    public override string ToString()
+    {
+        return CacheRefs+";"+CacheMisses+";"+Energy+";"+ Seconds;
+    }
 }
