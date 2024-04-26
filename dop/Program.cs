@@ -1,7 +1,7 @@
 ﻿#define RENDERING
-#define INPUT
-#define _RECORDING
-#define _REPLAYING
+// #define INPUT
+// #define RECORDING
+#define REPLAYING
 using System;
 using System.Diagnostics;
 using System.Numerics;
