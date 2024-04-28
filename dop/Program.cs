@@ -1,7 +1,7 @@
 ﻿#define RENDERING
-// #define INPUT
-// #define RECORDING
-#define REPLAYING
+#define INPUT
+#define RECORDING
+// #define REPLAYING
 using System;
 using System.Diagnostics;
 using System.Numerics;
@@ -20,6 +20,12 @@ public static class Program
 
     public static void Main(string[] args)
     {
+        string path = "";
+        if(args.Length != 0)
+        {
+            path = args[0];
+        }
+
         Game game = new(69420);
 
         // setup the "scene"
@@ -53,7 +59,7 @@ public static class Program
         game.Players.Add(player);
 
 
-        game.Run();
+        game.Run(path);
     }
 }
 
@@ -69,7 +75,7 @@ public struct AxeMan()
 
     public static void OnRemove(Game game, AxeMan axeMan)
     {
-        game.SpawnLootBox(new LootBox { Collider = new Circle(axeMan.Position.X, axeMan.Position.Y, 7f), Color = 0xFFFFFF00, Health = 25, Shells = 10, Bolts = 3, Arrows = 5 });
+        game.SpawnLootBox(new LootBox { Collider = new Circle(axeMan.Position.X, axeMan.Position.Y, 7f), Color = 0xFFFFFF00, Health = 250, Shells = 10, Bolts = 3, Arrows = 5 });
     }
     public static void Update(Game game, ref AxeMan axeMan)
     {
@@ -220,14 +226,13 @@ public struct Player()
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
-    public int CurrentWeapon { get; } //TODO: implement
+    public int CurrentWeapon = 0;
     public Vector2 Direction { get; set; }
-    public List<Weapon> Weapons { get; private set; } = [new Shotgun(), new Crossbow(),];
-
+    public List<Weapon> Weapons { get; private set; } = [new Bow(), new Crossbow(), new Shotgun()];
     public Vector2 Velocity;
     public int AttackCooldown;
-    public int HP;
-    public int MaxHP;
+    public int HP = MaxHP;
+    public const int MaxHP = 1000;
 
     public static void OnRemove(Game game, Player player) { }
     public static void Update(Game game, ref Player player)
@@ -244,10 +249,19 @@ public struct Player()
             if (player.Velocity.LengthSquared() > 0.0f) player.Direction = Vector2.Normalize(player.Velocity);
 
             if (game.KeyState.Shoot == 1)
+            {
                 if (player.AttackCooldown <= 0)
                 {
                     player.Weapons[player.CurrentWeapon].Attack(game, player);
                 }
+            }
+            else switch(game.KeyState.WeaponChoice)
+            {
+                case 1: player.CurrentWeapon = 0; break;
+                case 2: player.CurrentWeapon = 1; break;
+                case 3: player.CurrentWeapon = 2; break;
+                default: break;
+            }
 
             foreach (Weapon weapon in player.Weapons)
             {
@@ -342,7 +356,7 @@ public struct LootBox
             Player player = game.Players[i];
             if (lootBox.Collider.Overlaps(player.Collider))
             {
-                player.HP = Math.Max(player.HP + lootBox.Health, player.MaxHP);
+                player.HP = Math.Max(player.HP + lootBox.Health, Player.MaxHP);
                 foreach (Weapon weapon in player.Weapons)
                 {
                     if (weapon is Shotgun s) s.Ammo += lootBox.Shells;
@@ -612,13 +626,13 @@ public class Game(int seed)
 #if REPLAYING
     public Replay replay;
 #endif
-    public void Run()
+    public void Run(string ReplayPath = "")
     {
 #if RECORDING
         record = new Recording();
 #endif
 #if REPLAYING
-        replay = new Replay("game");
+        replay = new Replay(ReplayPath);
 #endif
 #if RENDERING
         SDLTools.Assert(SDL.SDL_Init(SDL.SDL_INIT_VIDEO));
@@ -654,7 +668,10 @@ public class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_w) KeyState.Up = 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s) KeyState.Down = 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close = 1;
-                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot = 1;      
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_1 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 1;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_2 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 2;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_3 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 3;
                 }
 
                 if (e.type == SDL.SDL_EventType.SDL_KEYUP)
@@ -665,6 +682,9 @@ public class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s) KeyState.Down = 0;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close = 0;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_1) KeyState.WeaponChoice = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_2) KeyState.WeaponChoice = 0;
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_3) KeyState.WeaponChoice = 0;
                 }
             }
 #if !RECORDING
@@ -692,8 +712,9 @@ public class Game(int seed)
 
 #endif
             // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
+#if RENDERING
             SDL.SDL_SetWindowTitle(window, $"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
-
+#endif
             //update
             for (int i = 0; i < AxeMans.Count; i++)
             {
@@ -998,7 +1019,6 @@ class Shotgun : Weapon
                 tempDirection.Y = MathF.Sin(angleBetweenShots) * shotDirection.X + MathF.Cos(angleBetweenShots) * shotDirection.Y;
                 shotDirection = tempDirection;
                 game.SpawnShell(new Shell { Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF00FFFF, Collider = new Circle(player.Position.X, player.Position.Y, 5f), Speed = 0.5f });
-                Console.WriteLine(shotDirection);
             }
             base.Attack(game, player);
         }
@@ -1012,7 +1032,8 @@ public struct KeyState
     public uint Left;
     public uint Right;
     public uint Close;
-    public int Shoot;
+    public uint Shoot;
+    public uint WeaponChoice;
 }
 public struct Rect(float x, float y, float width, float height)
 {
