@@ -6,6 +6,7 @@ class Program
 {
     public const string PERFOPTIONS = "stat -e cache-references,cache-misses,\"power/energy-cores/\" -a";
     public const string PATHTOOOP = "/home/blitzcrank/p6/oop/bin/Release/net8.0/oop";
+    public const string PATHTODOP = "/home/blitzcrank/p6/dop/bin/Release/net8.0/dop";
     public const string PATHTOREPLAYS = "/home/blitzcrank/p6/Replay/";
     public const string REPLAYNAME = "game";
     public static void Main(string[] args)
@@ -39,6 +40,11 @@ class Program
         {
             TestRunner testRunner = new TestRunner(PERFOPTIONS, PATHTOOOP, PATHTOREPLAYS, REPLAYNAME);
             testRunner.RunTest(iterations,"OOP");
+        }
+        if(DOP)
+        {
+            TestRunner testRunner = new TestRunner(PERFOPTIONS,PATHTODOP,PATHTOREPLAYS,REPLAYNAME);
+            testRunner.RunTest(iterations,"DOP");
         }
 
     }
