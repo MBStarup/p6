@@ -1,6 +1,6 @@
 ﻿#define RENDERING
 #define INPUT
-// #define RECORDING
+#define RECORDING
 // #define REPLAYING
 
 using System.Diagnostics;
@@ -22,6 +22,12 @@ static class Program
 
     public static void Main(string[] args)
     {
+        string path = "";
+        if(args.Length != 0)
+        {
+            path = args[0];
+        }
+
         Game game = new(69420);
 
         // setup the "scene"
@@ -45,7 +51,7 @@ static class Program
         }
         game.GameObjects.Add(new Player { Position = new Vector2(100, 100) });
 
-        game.Run();
+        game.Run(path);
     }
 }
 
@@ -178,13 +184,13 @@ class Game(int seed)
 #if REPLAYING
     public Replay replay;
 #endif
-    public void Run()
+    public void Run(string ReplayPath = "")
     {
 #if RECORDING
         record = new Recording();
 #endif
 #if REPLAYING
-        replay = new Replay("game");
+        replay = new Replay(ReplayPath);
 #endif
 #if RENDERING
         SDLTools.Assert(SDL.SDL_Init(SDL.SDL_INIT_VIDEO));
@@ -271,7 +277,9 @@ class Game(int seed)
 
 #endif
             // SDL.SDL_SetWindowTitle(window, $"avg frametime: {frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / frameTimeBuffer.Count()}");
+#if RENDERING
             SDL.SDL_SetWindowTitle(window, $"FPS: {frameTimeBuffer.Count() / (frameTimeBuffer.Aggregate(0.0, (x, y) => x + y) / 1000)}");
+#endif
             //update
             foreach (var gameObject in GameObjects)
             {

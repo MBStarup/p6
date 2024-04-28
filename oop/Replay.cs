@@ -13,7 +13,7 @@ class Recording
     }
     public void saveRecording()
     {
-        writer = new StreamWriter("game");
+        writer = new StreamWriter("../Replay/game");
         foreach(LoopInputs loop in loopInputs)
         {
             writer.WriteLine(loop.ToString());
