@@ -170,6 +170,7 @@ class Game(int seed)
 {
     public float DeltaTime;
     public Random Rand = new Random(seed);
+    public static Random LootRNG = new Random(404);
 
     public List<GameObject> GameObjects = new();
     public List<GameObject> ToRemove = new();
@@ -351,13 +352,12 @@ class Game(int seed)
     public void Spawn(GameObject gameObject) => ToSpawn.Add(gameObject);
     public static List<Item> GenerateLoot()
     {
-        Random rng = new Random(404);
         var loot = new List<Item>();
-        if (rng.Next(10) > 5)
+        if (LootRNG.Next(10) > 5)
             loot.Add(new HealthPack());
-        loot.Add(new ArrowBundle(rng.Next(1, 3)));
-        loot.Add(new BoltBundle(rng.Next(1, 3)));
-        loot.Add(new ShellBox(rng.Next(1, 3)));
+        loot.Add(new ShellBox(LootRNG.Next(1, 3)));
+        loot.Add(new BoltBundle(LootRNG.Next(1, 3)));
+        loot.Add(new ArrowBundle(LootRNG.Next(1, 3)));
         return loot;
     }
 }
