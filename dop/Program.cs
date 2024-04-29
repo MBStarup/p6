@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Numerics;
 using SDL2;
 using CircularBuffer;
-using System.ComponentModel.DataAnnotations;
-using System.IO.Compression;
 
 
 
@@ -21,15 +19,24 @@ public static class Program
     public static void Main(string[] args)
     {
         string path = "";
-        if(args.Length != 0)
+        if (args.Length != 0)
         {
             path = args[0];
         }
 
         Game game = new(69420);
 
+        // public static List<Item> GenerateLoot()
+        // {
+        //     Random rng = new Random(404);
+        //     var loot = new List<Item>();
+
+        //     return loot;
+        // }
+
         // setup the "scene"
         Vector2 maxPos = new(Program.WINDOW_X, Program.WINDOW_Y);
+        Random lootRNG = new Random(404);
         for (int i = 0; i < 100; i++)
         {
             var axeMan = new AxeMan
@@ -39,6 +46,16 @@ public static class Program
             axeMan.Collider.R = 12.5f;
             axeMan.ID = (uint)i;
             axeMan.Color = 0xFFFF0000;
+
+            int lootHealth = 0;
+            if (lootRNG.Next(10) > 5)
+                lootHealth = 250;
+            int lootShell = lootRNG.Next(1, 3);
+            int lootBolt = lootRNG.Next(1, 3);
+            int lootArrow = lootRNG.Next(1, 3);
+
+            axeMan.Loot = new LootBox { Color = 0xFFBF9000, Health = lootHealth, Shells = lootShell, Bolts = lootBolt, Arrows = lootArrow };
+
             game.AxeMans.Add(axeMan);
         }
 
@@ -51,6 +68,17 @@ public static class Program
             slime.Collider.R = 12.5f;
             slime.ID = (uint)i;
             slime.Color = 0xFF00FF00;
+
+
+            int lootHealth = 0;
+            if (lootRNG.Next(10) > 5)
+                lootHealth = 250;
+            int lootShell = lootRNG.Next(1, 3);
+            int lootBolt = lootRNG.Next(1, 3);
+            int lootArrow = lootRNG.Next(1, 3);
+
+            slime.Loot = new LootBox { Color = 0xFFBF9000, Health = lootHealth, Shells = lootShell, Bolts = lootBolt, Arrows = lootArrow };
+
             game.Slimes.Add(slime);
         }
         Player player = new Player { Position = new Vector2(100, 100) };
@@ -69,13 +97,17 @@ public struct AxeMan()
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
+    public int Damage = 3;
+
     public Vector2 Velocity;
-    public int MaxHP = 10;
-    public int HP;
+    public int MaxHP = 21;
+    public int HP = 21;
+    public LootBox Loot;
 
     public static void OnRemove(Game game, AxeMan axeMan)
     {
-        game.SpawnLootBox(new LootBox { Collider = new Circle(axeMan.Position.X, axeMan.Position.Y, 7f), Color = 0xFFFFFF00, Health = 250, Shells = 10, Bolts = 3, Arrows = 5 });
+        axeMan.Loot.Collider = new Circle { X = axeMan.Position.X, Y = axeMan.Position.Y, R = 5f };
+        game.SpawnLootBox(axeMan.Loot);
     }
     public static void Update(Game game, ref AxeMan axeMan)
     {
@@ -127,8 +159,9 @@ public struct AxeMan()
                 }
             }
         }
-        foreach (Player player in game.Players)
+        for (int i = 0; i < game.Players.Count; i++)
         {
+            Player player = game.Players[i];
             if (axeMan.Collider.Overlaps(player.Collider))
             {
                 while (axeMan.Collider.Overlaps(player.Collider))
@@ -136,7 +169,13 @@ public struct AxeMan()
                     var direction = Vector2.Normalize(axeMan.Collider.Center - player.Collider.Center);
                     axeMan.Position += new Vector2(direction.X, direction.Y) * 0.1f;
                 }
+                if ((player.HP -= axeMan.Damage) <= 0)
+                {
+                    game.RemovePlayer(player); //! Probably shoulndn't change player further after this, as I think structs might be compared by value when looking for which one to remove
+                }
+
             }
+            game.Players[i] = player;
         }
         foreach (LootBox lootBox in game.LootBoxs)
         {
@@ -162,11 +201,19 @@ public struct Slime()
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
-    public Vector2 Velocity;
-    public int MaxHP = 10;
-    public int HP;
+    public int Damage = 1;
 
-    public static void OnRemove(Game game, Slime slime) { }
+    public LootBox Loot;
+
+    public Vector2 Velocity;
+    public int MaxHP = 5;
+    public int HP = 5;
+
+    public static void OnRemove(Game game, Slime slime)
+    {
+        slime.Loot.Collider = new Circle { X = slime.Position.X, Y = slime.Position.Y, R = 5f };
+        game.SpawnLootBox(slime.Loot);
+    }
     public static void Update(Game game, ref Slime slime)
     {
         foreach (AxeMan axeMan in game.AxeMans)
@@ -191,8 +238,9 @@ public struct Slime()
                 }
             }
         }
-        foreach (Player player in game.Players)
+        for (int i = 0; i < game.Players.Count; i++)
         {
+            Player player = game.Players[i];
             if (slime.Collider.Overlaps(player.Collider))
             {
                 while (slime.Collider.Overlaps(player.Collider))
@@ -200,7 +248,12 @@ public struct Slime()
                     var direction = Vector2.Normalize(slime.Collider.Center - player.Collider.Center);
                     slime.Position += new Vector2(direction.X, direction.Y) * 0.1f;
                 }
+                if ((player.HP -= slime.Damage) <= 0)
+                {
+                    game.RemovePlayer(player); //! Probably shoulndn't change player further after this, as I think structs might be compared by value when looking for which one to remove
+                }
             }
+            game.Players[i] = player;
         }
         foreach (LootBox lootBox in game.LootBoxs)
         {
@@ -255,13 +308,13 @@ public struct Player()
                     player.Weapons[player.CurrentWeapon].Attack(game, player);
                 }
             }
-            else switch(game.KeyState.WeaponChoice)
-            {
-                case 1: player.CurrentWeapon = 0; break;
-                case 2: player.CurrentWeapon = 1; break;
-                case 3: player.CurrentWeapon = 2; break;
-                default: break;
-            }
+            else switch (game.KeyState.WeaponChoice)
+                {
+                    case 1: player.CurrentWeapon = 0; break;
+                    case 2: player.CurrentWeapon = 1; break;
+                    case 3: player.CurrentWeapon = 2; break;
+                    default: break;
+                }
 
             foreach (Weapon weapon in player.Weapons)
             {
@@ -463,6 +516,7 @@ public struct Bolt
     public int Damage;
     public float Speed;
     public float RangeSquared;
+    public int PenetrationPower;
     public static void OnRemove(Game game, Bolt bolt) { }
     public static void Update(Game game, ref Bolt bolt)
     {
@@ -479,7 +533,8 @@ public struct Bolt
             {
                 axeMan.HP -= bolt.Damage;
                 if (axeMan.HP <= 0) game.RemoveAxeMan(axeMan);
-                game.RemoveBolt(bolt);
+                if (--bolt.PenetrationPower <= 0)
+                    game.RemoveBolt(bolt);
             }
             game.AxeMans[i] = axeMan; //dealing with value struct memes this seems slow or somethign idk :shrug:
         }
@@ -490,7 +545,8 @@ public struct Bolt
             {
                 slime.HP -= bolt.Damage;
                 if (slime.HP <= 0) game.RemoveSlime(slime);
-                game.RemoveBolt(bolt);
+                if (--bolt.PenetrationPower <= 0)
+                    game.RemoveBolt(bolt);
             }
             game.Slimes[i] = slime; //dealing with value struct memes this seems slow or somethign idk :shrug:
         }
@@ -668,7 +724,7 @@ public class Game(int seed)
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_w) KeyState.Up = 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s) KeyState.Down = 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_ESCAPE) KeyState.Close = 1;
-                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot = 1;      
+                    if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_e) KeyState.Shoot = 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_1 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 1;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_2 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 2;
                     if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_3 && KeyState.WeaponChoice == 0) KeyState.WeaponChoice = 3;
@@ -907,18 +963,6 @@ public class Game(int seed)
     public void SpawnShell(Shell shell) => ShellsToSpawn.Add(shell);
     public void SpawnBolt(Bolt bolt) => BoltsToSpawn.Add(bolt);
     public void SpawnArrow(Arrow arrow) => ArrowsToSpawn.Add(arrow);
-
-    // public static List<Item> GenerateLoot()
-    // {
-    //     Random rng = new Random(404);
-    //     var loot = new List<Item>();
-    //     if (rng.Next(10) > 5)
-    //         loot.Add(new HealthPack());
-    //     loot.Add(new ArrowBundle(rng.Next(1, 10)));
-    //     loot.Add(new BoltBundle(rng.Next(1, 3)));
-    //     loot.Add(new ShellBox(rng.Next(1, 3) * 5));
-    //     return loot;
-    // }
 }
 
 
@@ -953,15 +997,15 @@ class Bow : Weapon
     {
         Ammo = 10;
     }
-    public override int Range => 10;
-    public override int Damage => 3;
+    public override int Range => 10; //intentionally left unused
+    public override int Damage => 25;
     public override float Cooldown => 1000;
     public override void Attack(Game game, Player player)
     {
         if (Ammo > 0 && RemainingCooldown <= 0)
         {
             Ammo--;
-            game.SpawnArrow(new Arrow { Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFF00FFFF, Collider = new Circle(player.Position.X, player.Position.Y, 5f), Speed = 0.5f });
+            game.SpawnArrow(new Arrow { RangeSquared = 10000f, Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFF6A329F, Collider = new Circle(player.Position.X, player.Position.Y, 2.5f), Speed = 0.5f });
             base.Attack(game, player);
         }
     }
@@ -973,7 +1017,7 @@ class Crossbow : Weapon
     {
         Ammo = 5;
     }
-    public override int Range => 15;
+    public override int Range => 15; // intentialonally left unused
     public override int Damage => 10;
     public override float Cooldown => 3000;
     public override void Attack(Game game, Player player)
@@ -981,7 +1025,7 @@ class Crossbow : Weapon
         if (Ammo > 0 && RemainingCooldown <= 0)
         {
             Ammo--;
-            game.SpawnBolt(new Bolt { Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFF00FFFF, Collider = new Circle(player.Position.X, player.Position.Y, 5f), Speed = 0.5f });
+            game.SpawnBolt(new Bolt { RangeSquared = 10000f, Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFFC90076, Collider = new Circle(player.Position.X, player.Position.Y, 2.5f), Speed = 0.5f });
             base.Attack(game, player);
         }
     }
@@ -999,7 +1043,7 @@ class Shotgun : Weapon
     private float startAngle = 0.5f;
     private float angleBetweenShots;
     public int numberShots = 5;
-    public override int Range => 5;
+    public override int Range => 5; // intentialonally left unused
     public override int Damage => 7;
     public override float Cooldown => 4000;
     public override void Attack(Game game, Player player)
@@ -1012,13 +1056,13 @@ class Shotgun : Weapon
             tempDirection.X = MathF.Cos(startAngle) * shotDirection.X - MathF.Sin(startAngle) * shotDirection.Y;
             tempDirection.Y = MathF.Sin(startAngle) * shotDirection.X + MathF.Cos(startAngle) * shotDirection.Y;
             shotDirection = tempDirection;
-            game.SpawnShell(new Shell { Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF00FFFF, Collider = new Circle(player.Position.X, player.Position.Y, 5f), Speed = 0.5f });
+            game.SpawnShell(new Shell { RangeSquared = 10000f, Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF6A329F, Collider = new Circle(player.Position.X, player.Position.Y, 2.5f), Speed = 0.5f });
             for (int i = 1; i < numberShots; i++)
             {
                 tempDirection.X = MathF.Cos(angleBetweenShots) * shotDirection.X - MathF.Sin(angleBetweenShots) * shotDirection.Y;
                 tempDirection.Y = MathF.Sin(angleBetweenShots) * shotDirection.X + MathF.Cos(angleBetweenShots) * shotDirection.Y;
                 shotDirection = tempDirection;
-                game.SpawnShell(new Shell { Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF00FFFF, Collider = new Circle(player.Position.X, player.Position.Y, 5f), Speed = 0.5f });
+                game.SpawnShell(new Shell { RangeSquared = 10000f, Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF6A329F, Collider = new Circle(player.Position.X, player.Position.Y, 2.5f), Speed = 0.5f });
             }
             base.Attack(game, player);
         }
