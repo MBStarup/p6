@@ -94,6 +94,11 @@ public static class Program
 public struct AxeMan()
 {
     public uint ID;
+    public override bool Equals(object obj)
+    {
+        if (!(obj is AxeMan axeMan)) return false;
+        return ID.Equals(axeMan.ID);
+    }
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
@@ -198,6 +203,11 @@ public struct AxeMan()
 public struct Slime()
 {
     public uint ID;
+    public override bool Equals(object obj)
+    {
+        if (!(obj is Slime slime)) return false;
+        return ID.Equals(slime.ID);
+    }
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
@@ -276,6 +286,11 @@ public struct Slime()
 public struct Player()
 {
     public uint ID;
+    public override bool Equals(object obj)
+    {
+        if (!(obj is Player player)) return false;
+        return ID.Equals(player.ID);
+    }
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
@@ -383,6 +398,11 @@ public struct Player()
 public struct LootBox
 {
     public uint ID;
+    public override bool Equals(object obj)
+    {
+        if (!(obj is LootBox lootBox)) return false;
+        return ID.Equals(lootBox.ID);
+    }
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
@@ -441,6 +461,11 @@ public struct LootBox
 public struct Shell
 {
     public uint ID;
+    public override bool Equals(object obj)
+    {
+        if (!(obj is Shell shell)) return false;
+        return ID.Equals(shell.ID);
+    }
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
@@ -507,6 +532,11 @@ public struct Shell
 public struct Bolt
 {
     public uint ID;
+    public override bool Equals(object obj)
+    {
+        if (!(obj is Bolt bolt)) return false;
+        return ID.Equals(bolt.ID);
+    }
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
@@ -575,6 +605,11 @@ public struct Bolt
 public struct Arrow
 {
     public uint ID;
+    public override bool Equals(object obj)
+    {
+        if (!(obj is Arrow arrow)) return false;
+        return ID.Equals(arrow.ID);
+    }
     public uint Color;
     public Circle Collider;
     public Vector2 Position { get => Collider.Center; set => Collider.Center = value; }
@@ -642,6 +677,7 @@ public struct Arrow
 
 public class Game(int seed)
 {
+    private uint id_counter = 0;
     public float DeltaTime;
     public Random Rand = new Random(seed);
 
@@ -956,13 +992,41 @@ public class Game(int seed)
     public void RemoveBolt(Bolt bolt) => BoltsToRemove.Add(bolt);
     public void RemoveArrow(Arrow arrow) => ArrowsToRemove.Add(arrow);
 
-    public void SpawnAxeMan(AxeMan axeMan) => AxeMansToSpawn.Add(axeMan);
-    public void SpawnSlime(Slime slime) => SlimesToSpawn.Add(slime);
-    public void SpawnPlayer(Player player) => PlayersToSpawn.Add(player);
-    public void SpawnLootBox(LootBox lootBox) => LootBoxsToSpawn.Add(lootBox);
-    public void SpawnShell(Shell shell) => ShellsToSpawn.Add(shell);
-    public void SpawnBolt(Bolt bolt) => BoltsToSpawn.Add(bolt);
-    public void SpawnArrow(Arrow arrow) => ArrowsToSpawn.Add(arrow);
+    public void SpawnAxeMan(AxeMan axeMan)
+    {
+        axeMan.ID = ++id_counter;
+        AxeMansToSpawn.Add(axeMan);
+    }
+    public void SpawnSlime(Slime slime)
+    {
+        slime.ID = ++id_counter;
+        SlimesToSpawn.Add(slime);
+    }
+    public void SpawnPlayer(Player player)
+    {
+        player.ID = ++id_counter;
+        PlayersToSpawn.Add(player);
+    }
+    public void SpawnLootBox(LootBox lootBox)
+    {
+        lootBox.ID = ++id_counter;
+        LootBoxsToSpawn.Add(lootBox);
+    }
+    public void SpawnShell(Shell shell)
+    {
+        shell.ID = ++id_counter;
+        ShellsToSpawn.Add(shell);
+    }
+    public void SpawnBolt(Bolt bolt)
+    {
+        bolt.ID = ++id_counter;
+        BoltsToSpawn.Add(bolt);
+    }
+    public void SpawnArrow(Arrow arrow)
+    {
+        arrow.ID = ++id_counter;
+        ArrowsToSpawn.Add(arrow);
+    }
 }
 
 
