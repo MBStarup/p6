@@ -23,7 +23,7 @@ static class Program
     public static void Main(string[] args)
     {
         string path = "";
-        if(args.Length != 0)
+        if (args.Length != 0)
         {
             path = args[0];
         }
@@ -216,12 +216,12 @@ class Game(int seed)
         {
             // the code that you want to measure comes here
 #if INPUT
-/*             if (KeyState.Right > 0) KeyState.Right += 1;
-            if (KeyState.Left > 0) KeyState.Left += 1;
-            if (KeyState.Up > 0) KeyState.Up += 1;
-            if (KeyState.Down > 0) KeyState.Down += 1;
-            if (KeyState.Close > 0) KeyState.Close += 1;
-            if (KeyState.Shoot > 0) KeyState.Shoot += 1; */
+            /*             if (KeyState.Right > 0) KeyState.Right += 1;
+                        if (KeyState.Left > 0) KeyState.Left += 1;
+                        if (KeyState.Up > 0) KeyState.Up += 1;
+                        if (KeyState.Down > 0) KeyState.Down += 1;
+                        if (KeyState.Close > 0) KeyState.Close += 1;
+                        if (KeyState.Shoot > 0) KeyState.Shoot += 1; */
 
             while (SDL.SDL_PollEvent(out SDL.SDL_Event e) != 0)
             {
@@ -270,7 +270,7 @@ class Game(int seed)
 #endif
 #if RECORDING
             record.recordState(this);
-            if (KeyState.Close >0)
+            if (KeyState.Close > 0)
             {
                 record.saveRecording();
                 Environment.Exit(0);
@@ -432,13 +432,13 @@ class Player : GameObject
                 CurrentWeapon.Attack(game, this);
             }
         }
-        else switch(game.KeyState.WeaponChoice)
-        {
-            case 1: CurrentWeapon = Weapons[0]; break;
-            case 2: CurrentWeapon = Weapons[1]; break;
-            case 3: CurrentWeapon = Weapons[2]; break;
-            default: break;
-        }
+        else switch (game.KeyState.WeaponChoice)
+            {
+                case 1: CurrentWeapon = Weapons[0]; break;
+                case 2: CurrentWeapon = Weapons[1]; break;
+                case 3: CurrentWeapon = Weapons[2]; break;
+                default: break;
+            }
         foreach (Weapon weapon in Weapons)
         {
             weapon.Update(game);
@@ -449,7 +449,7 @@ class Player : GameObject
     public override void OnCollision(Game game, GameObject other)
     {
         (other as LootBox)?.OnCollision(game, this);
-        while (this.Collider.Overlaps(other.Collider))
+        while (this.Collider.Overlaps(other.Collider) && (other is AxeMan || other is Slime || other is Player)) // TODO: make this more general, or at least remember to update is if we add more things that can be collided with
         {
             var direction = Vector2.Normalize(Collider.Center - other.Collider.Center);
             Position += new Vector2(direction.X, direction.Y) * 0.1f;
@@ -464,8 +464,8 @@ abstract class Enemy : GameObject
         Loot = loot;
         HP = MaxHP;
     }
-    public virtual int MaxHP{ get; }
-    public virtual int Damage{ get;}
+    public virtual int MaxHP { get; }
+    public virtual int Damage { get; }
     public int HP;
     public List<Item> Loot;
     public override void OnRemoval(Game game)
@@ -487,7 +487,7 @@ abstract class Enemy : GameObject
                 game.Remove(target);
             }
         }
-        while (this.Collider.Overlaps(other.Collider))
+        while (this.Collider.Overlaps(other.Collider) && (other is AxeMan || other is Slime || other is Player)) // TODO: make this more general, or at least remember to update is if we add more things that can be collided with
         {
             var direction = Vector2.Normalize(Collider.Center - other.Collider.Center);
             Position += new Vector2(direction.X, direction.Y) * 0.1f;
