@@ -13,13 +13,18 @@ class Recording
     }
     public void saveRecording()
     {
-        writer = new StreamWriter("../Replay/game");
-        foreach(LoopInputs loop in loopInputs)
+        var ReplayFolder = "..\\Replays";
+        System.IO.Directory.CreateDirectory(ReplayFolder);
+        var file = File.Open(Path.Combine(ReplayFolder, $"{DateTime.Now.ToString("yyyy-M-dd-HH-mm-ss")}.replay"), System.IO.FileMode.OpenOrCreate);
+        using (StreamWriter writer = new StreamWriter(file))
         {
-            writer.WriteLine(loop.ToString());
+            System.Console.WriteLine($"Saving replay to {file.Name}");
+            foreach (LoopInputs loop in loopInputs)
+            {
+                writer.WriteLine(loop.ToString());
+            }
+            writer.WriteLine("GAMEEND");
         }
-        writer.WriteLine("GAMEEND");
-        writer.Close();
     }
 }
 class LoopInputs
@@ -55,7 +60,7 @@ class LoopInputs
     public KeyState KeyState;
     private string keyStateString()
     {
-        return KeyState.Up.ToString() + KeyState.Down.ToString() + KeyState.Left.ToString() + KeyState.Right.ToString() + KeyState.Shoot.ToString() + 
+        return KeyState.Up.ToString() + KeyState.Down.ToString() + KeyState.Left.ToString() + KeyState.Right.ToString() + KeyState.Shoot.ToString() +
         KeyState.WeaponChoice.ToString();
     }
     public override string ToString()
@@ -70,7 +75,7 @@ class Replay
     {
         inputs = new List<LoopInputs>();
         reader = new StreamReader(replayFile);
-        while((line = reader.ReadLine())!= "GAMEEND")
+        while ((line = reader.ReadLine()) != "GAMEEND")
         {
             splitline = line.Split(" ");
             inputs.Add(new LoopInputs(float.Parse(splitline[0]), splitline[1]));
@@ -83,7 +88,7 @@ class Replay
     private int replaystep = 0;
     public void update(Game game)
     {
-        if(replaystep >= inputs.Count)
+        if (replaystep >= inputs.Count)
         {
             game.KeyState.Close = 1;
         }
