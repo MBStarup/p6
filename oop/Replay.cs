@@ -13,7 +13,7 @@ class Recording
     }
     public void saveRecording()
     {
-        var ReplayFolder = "..\\Replays";
+        var ReplayFolder = Path.Combine("..", "Replays");
         System.IO.Directory.CreateDirectory(ReplayFolder);
         var file = File.Open(Path.Combine(ReplayFolder, $"{DateTime.Now.ToString("yyyy-M-dd-HH-mm-ss")}.replay"), System.IO.FileMode.OpenOrCreate);
         using (StreamWriter writer = new StreamWriter(file))
