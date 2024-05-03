@@ -1069,7 +1069,7 @@ class Bow : Weapon
         if (Ammo > 0 && RemainingCooldown <= 0)
         {
             Ammo--;
-            game.SpawnArrow(new Arrow { RangeSquared = 10000f, Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFF6A329F, Collider = new Circle(player.Position.X, player.Position.Y, 2.5f), Speed = 0.5f });
+            game.SpawnArrow(new Arrow { RangeSquared = 10000f, Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFF6A329F, Collider = new Circle(player.Position.X + player.Direction.X * 15f, player.Position.Y + player.Direction.Y * 15f, 2.5f), Speed = 0.5f });
             base.Attack(game, player);
         }
     }
@@ -1089,7 +1089,7 @@ class Crossbow : Weapon
         if (Ammo > 0 && RemainingCooldown <= 0)
         {
             Ammo--;
-            game.SpawnBolt(new Bolt { RangeSquared = 10000f, Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFFC90076, Collider = new Circle(player.Position.X, player.Position.Y, 2.5f), Speed = 0.5f });
+            game.SpawnBolt(new Bolt { RangeSquared = 10000f, Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFFC90076, Collider = new Circle(player.Position.X + player.Direction.X * 15f, player.Position.Y + player.Direction.Y * 15f, 2.5f), Speed = 0.5f });
             base.Attack(game, player);
         }
     }
@@ -1120,13 +1120,13 @@ class Shotgun : Weapon
             tempDirection.X = MathF.Cos(startAngle) * shotDirection.X - MathF.Sin(startAngle) * shotDirection.Y;
             tempDirection.Y = MathF.Sin(startAngle) * shotDirection.X + MathF.Cos(startAngle) * shotDirection.Y;
             shotDirection = tempDirection;
-            game.SpawnShell(new Shell { RangeSquared = 10000f, Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF6A329F, Collider = new Circle(player.Position.X, player.Position.Y, 2.5f), Speed = 0.5f });
+            game.SpawnShell(new Shell { RangeSquared = 10000f, Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF6A329F, Collider = new Circle(player.Position.X + player.Direction.X * 15f, player.Position.Y + player.Direction.Y * 15f, 2.5f), Speed = 0.5f });
             for (int i = 1; i < numberShots; i++)
             {
                 tempDirection.X = MathF.Cos(angleBetweenShots) * shotDirection.X - MathF.Sin(angleBetweenShots) * shotDirection.Y;
                 tempDirection.Y = MathF.Sin(angleBetweenShots) * shotDirection.X + MathF.Cos(angleBetweenShots) * shotDirection.Y;
                 shotDirection = tempDirection;
-                game.SpawnShell(new Shell { RangeSquared = 10000f, Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF6A329F, Collider = new Circle(player.Position.X, player.Position.Y, 2.5f), Speed = 0.5f });
+                game.SpawnShell(new Shell { RangeSquared = 10000f, Origin = player.Position, Direction = shotDirection, Damage = Damage, Color = 0xFF6A329F, Collider = new Circle(player.Position.X + player.Direction.X * 15f, player.Position.Y + player.Direction.Y * 15f, 2.5f), Speed = 0.5f });
             }
             base.Attack(game, player);
         }
