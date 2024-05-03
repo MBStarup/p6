@@ -176,7 +176,7 @@ public struct AxeMan()
                 }
                 if ((player.HP -= axeMan.Damage) <= 0)
                 {
-                    game.RemovePlayer(player); //! Probably shoulndn't change player further after this, as I think structs might be compared by value when looking for which one to remove
+                    game.RemovePlayer(player);
                 }
 
             }
