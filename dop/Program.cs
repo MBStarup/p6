@@ -176,7 +176,7 @@ public struct AxeMan()
                 }
                 if ((player.HP -= axeMan.Damage) <= 0)
                 {
-                    game.RemovePlayer(player); //! Probably shoulndn't change player further after this, as I think structs might be compared by value when looking for which one to remove
+                    game.RemovePlayer(player);
                 }
 
             }
@@ -1089,7 +1089,7 @@ class Crossbow : Weapon
         if (Ammo > 0 && RemainingCooldown <= 0)
         {
             Ammo--;
-            game.SpawnBolt(new Bolt { RangeSquared = 10000f, Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFFC90076, Collider = new Circle(player.Position.X + player.Direction.X * 15f, player.Position.Y + player.Direction.Y * 15f, 2.5f), Speed = 0.5f });
+            game.SpawnBolt(new Bolt { PenetrationPower = 3, RangeSquared = 10000f, Origin = player.Position, Direction = player.Direction, Damage = Damage, Color = 0xFFC90076, Collider = new Circle(player.Position.X + player.Direction.X * 15f, player.Position.Y + player.Direction.Y * 15f, 2.5f), Speed = 0.5f });
             base.Attack(game, player);
         }
     }
