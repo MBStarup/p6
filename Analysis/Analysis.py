@@ -26,6 +26,13 @@ ax.set_ylabel("Cache misses")
 ax.set_aspect("equal")
 plot.show()
 
+fig, ax = plot.subplots()
+ax.scatter(OOPtime, OOPenergyuse , c="red")
+ax.scatter(DOPtime, DOPenergyuse, c="blue")
+ax.set_xlabel("Time (s)")
+ax.set_ylabel("Energy use (J)")
+plot.show()
+
 energyData = (OOPenergyuse, DOPenergyuse)
 plot.boxplot(energyData, labels=["OOP", "DOP"])
 plot.ylabel("Energy (J)")
@@ -90,3 +97,9 @@ print("The R value for time and energy in OOP is: " + np.float64(OOPTimeEnergyR.
 
 DOPTimeEnergyR = st.pearsonr(DOPtime, DOPenergyuse)
 print("The R value for time and energy in DOP is: " + np.float64(DOPTimeEnergyR.statistic).astype(str))
+
+bothTime = np.concatenate((OOPtime, DOPtime))
+bothEnergy = np.concatenate((OOPenergyuse, DOPenergyuse))
+
+bothTimeEnergyR = st.pearsonr(bothTime, bothEnergy)
+print("The R value for time and energy for both versions is: " + np.float64(bothTimeEnergyR.statistic).astype(str))
