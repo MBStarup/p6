@@ -3,20 +3,22 @@ from scipy import stats as st
 import numpy as np
 import matplotlib.pyplot as plot
 
-with open('../Measurements/OOPOnlyMove','r') as OOPfile:
-    OOPdata = np.loadtxt(OOPfile, delimiter=";", skiprows=1)
-    OOPdata = OOPdata.transpose()
-    OOPcacherefs = OOPdata[0]
-    OOPcachemisses = OOPdata[1]
-    OOPenergyuse = OOPdata[2]
-    OOPtime = OOPdata[3]
-with open("../Measurements/DOPOnlyMove","r") as DOPfile:
-    DOPdata = np.loadtxt(DOPfile, delimiter=";", skiprows=1,)
-    DOPdata = DOPdata.transpose()
-    DOPcacherefs = DOPdata[0]
-    DOPcachemisses = DOPdata[1]
-    DOPenergyuse = DOPdata[2]
-    DOPtime = DOPdata[3]
+def ReadData(path):
+    with open(path,'r') as file:
+        data = np.loadtxt(file, delimiter=";", skiprows=1)
+        data = data.transpose()
+        return data
+
+OOPdata = ReadData('../Measurements/OOPOnlyMove1')
+OOPcacherefs = OOPdata[0]
+OOPcachemisses = OOPdata[1]
+OOPenergyuse = OOPdata[2]
+OOPtime = OOPdata[3]
+DOPdata = ReadData('../Measurements/DOPOnlyMove1')
+DOPcacherefs = DOPdata[0]
+DOPcachemisses = DOPdata[1]
+DOPenergyuse = DOPdata[2]
+DOPtime = DOPdata[3]
     
 fig, ax = plot.subplots()
 ax.scatter(OOPcacherefs, OOPcachemisses, c="red")
