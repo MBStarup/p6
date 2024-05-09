@@ -52,8 +52,8 @@ fig.delaxes(axs[0,1])
 for ax in axs.flat:
     ax.set(xlabel = "Time (s)", ylabel =  "Energy (J)")
     # ax.set_aspect("equal")
-for ax in fig.get_axes():
-    ax.label_outer()
+# for ax in fig.get_axes():
+#     ax.label_outer()
 plot.show()
 
 energyData = (OOPdata1[2], OOPdata2[2], OOPdata3[2], DOPdata1[2], DOPdata2[2])

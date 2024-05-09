@@ -9,12 +9,12 @@ def ReadData(path):
         data = data.transpose()
         return data
 
-OOPdata = ReadData('../Measurements/OOPOnlyMove1')
+OOPdata = ReadData('../Measurements/OOP2405072112')
 OOPcacherefs = OOPdata[0]
 OOPcachemisses = OOPdata[1]
 OOPenergyuse = OOPdata[2]
 OOPtime = OOPdata[3]
-DOPdata = ReadData('../Measurements/DOPOnlyMove1')
+DOPdata = ReadData('../Measurements/DOP2405072222')
 DOPcacherefs = DOPdata[0]
 DOPcachemisses = DOPdata[1]
 DOPenergyuse = DOPdata[2]
