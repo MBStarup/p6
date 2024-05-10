@@ -20,6 +20,7 @@ class Program
         if (args.Length < 4) ExitWithUsage();
 
         var argQueue = new Queue<string>(args);
+        if (argQueue.Peek().ToLower() == "-h" || argQueue.Peek().ToLower() == "--help") ExitWithUsage();
 
         if (!int.TryParse(argQueue.Dequeue(), out int iterations)) ExitWithUsage();
 
