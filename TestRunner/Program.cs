@@ -5,10 +5,6 @@ using System.Text.RegularExpressions;
 class Program
 {
     public const string PERFOPTIONS = "stat -e cache-references,cache-misses,\"power/energy-cores/\" -a";
-    public const string PATHTOOOP = "/home/blitzcrank/p6/oop/bin/Release/net8.0/oop";
-    public const string PATHTODOP = "/home/blitzcrank/p6/dop/bin/Release/net8.0/dop";
-    public const string PATHTOREPLAYS = "/home/blitzcrank/p6/Replay/";
-    public const string REPLAYNAME = "game";
     public static List<(string Path, string Name)> Games = [];
     public static Queue<string> Replays = [];
     public static string USAGE = $"Usage: {System.AppDomain.CurrentDomain.FriendlyName} iterations {{-p game [-n name]}}... replay...";
@@ -103,16 +99,22 @@ class TestRunner
 
     public void RunTest(int iterations, string name)
     {
+        System.Console.Write($"Running test with replay {replay} on game {name}: ");
+        var (cursor_left, cursor_top) = Console.GetCursorPosition();
+        var outfile = Path.Combine("..", "Measurements", $"{replay}_{name}_{DateTime.Now.ToString("yyMMddHHmm")}_{iterations}.data");
         List<MeasurementResults> results = new List<MeasurementResults>();
         for (int i = 0; i < iterations; i++)
         {
+            Console.SetCursorPosition(cursor_left, cursor_top);
+            System.Console.Write(i);
             perf.Start();
             StreamReader reader = perf.StandardError;
             string output = reader.ReadToEnd();
             results.Add(new MeasurementResults(output));
         }
+        System.Console.WriteLine($"Done, writing to file {outfile}\n");
 
-        StreamWriter writer = new StreamWriter(Path.Combine("..", "Measurements", $"{replay}_{name}_{DateTime.Now.ToString("yyMMddHHmm")}_{iterations}.data"));
+        StreamWriter writer = new StreamWriter(outfile);
         writer.WriteLine("CacheRefs;CacheMisses;Energy(J);time(s)");
         foreach (var measurement in results) writer.WriteLine(measurement.ToString());
         writer.Close();
