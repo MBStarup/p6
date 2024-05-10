@@ -9,42 +9,51 @@ class Program
     public const string PATHTODOP = "/home/blitzcrank/p6/dop/bin/Release/net8.0/dop";
     public const string PATHTOREPLAYS = "/home/blitzcrank/p6/Replay/";
     public const string REPLAYNAME = "game";
+    public static List<(string Path, string Name)> Games = [];
+    public static Queue<string> Replays = [];
+    public static string USAGE = $"Usage: {System.AppDomain.CurrentDomain.FriendlyName} iterations {{-p game [-n name]}}... replay...";
+
+    private static void ExitWithUsage()
+    {
+        Console.WriteLine(USAGE);
+        Environment.Exit(-1);
+    }
     public static void Main(string[] args)
     {
-        bool OOP = false;
-        bool DOP = false;
-        int iterations = 100;
-        if(args.Length == 0)
+        if (args.Length < 4) ExitWithUsage();
+
+        var argQueue = new Queue<string>(args);
+
+        if (!int.TryParse(argQueue.Dequeue(), out int iterations)) ExitWithUsage();
+
+        var nextArg = argQueue.Peek();
+        while (nextArg == "-p")
         {
-            Console.WriteLine("Must specify paradigm");
-        }
-        else
-        {
-            if(args[0] == "oop")
+            argQueue.Dequeue(); //remove the -p
+            var game = argQueue.Dequeue();
+            var name = game;
+            nextArg = argQueue.Peek();
+            if (nextArg == "-n")
             {
-                OOP = true;
+                argQueue.Dequeue(); //remove the -n
+                name = argQueue.Dequeue();
+                nextArg = argQueue.Dequeue();
             }
-            if(args[0] == "dop")
+            Games.Add((game, name));
+        }
+
+        Replays = argQueue; //the rest of the args are replays
+
+        System.Console.WriteLine($"Running {iterations} iterations of replays [{(String.Join("; ", Replays))}] with games [{(String.Join("; ", Games))}]");
+
+
+        foreach (var replay in Replays)
+        {
+            foreach (var game in Games)
             {
-                DOP = true;
+                TestRunner testRunner = new TestRunner(PERFOPTIONS, game.Path, replay);
+                testRunner.RunTest(iterations, game.Name);
             }
-        }
-        if(args.Length >= 2)
-        {
-            if(!int.TryParse(args[1],out iterations))
-            {
-                Console.WriteLine("Number of iterations must be an integer");
-            }
-        }
-        if(OOP)
-        {
-            TestRunner testRunner = new TestRunner(PERFOPTIONS, PATHTOOOP, PATHTOREPLAYS, REPLAYNAME);
-            testRunner.RunTest(iterations,"OOP");
-        }
-        if(DOP)
-        {
-            TestRunner testRunner = new TestRunner(PERFOPTIONS,PATHTODOP,PATHTOREPLAYS,REPLAYNAME);
-            testRunner.RunTest(iterations,"DOP");
         }
 
     }
@@ -71,16 +80,18 @@ class MeasurementResults
     public int CacheMisses;
     public override string ToString()
     {
-        return CacheRefs+";"+CacheMisses+";"+Energy+";"+ Seconds;
+        return CacheRefs + ";" + CacheMisses + ";" + Energy + ";" + Seconds;
     }
 }
 
 class TestRunner
 {
-    public TestRunner(string perfoptions, string pathtoexe, string pathtoreplays, string replay)
+    private string replay;
+    public TestRunner(string perfoptions, string pathtoexe, string pathtoreplay)
     {
+        replay = Path.GetFileNameWithoutExtension(pathtoreplay);
         perf = new Process();
-        string arguments = $"{perfoptions} {pathtoexe} {pathtoreplays}{replay}";
+        string arguments = $"{perfoptions} {pathtoexe} {pathtoreplay}";
         perfStartInfo = new ProcessStartInfo("perf");
         perfStartInfo.Arguments = arguments;
         perfStartInfo.UseShellExecute = false;
@@ -90,10 +101,10 @@ class TestRunner
     Process perf;
     ProcessStartInfo perfStartInfo;
 
-    public void RunTest(int iterations, string paradigm)
+    public void RunTest(int iterations, string name)
     {
         List<MeasurementResults> results = new List<MeasurementResults>();
-        for(int i = 0; i<iterations; i++)
+        for (int i = 0; i < iterations; i++)
         {
             perf.Start();
             StreamReader reader = perf.StandardError;
@@ -101,13 +112,9 @@ class TestRunner
             results.Add(new MeasurementResults(output));
         }
 
-        DateTime time = DateTime.Now;
-        StreamWriter writer = new StreamWriter("../Measurements/"+paradigm+time.ToString("yyMMddHHmm"));
+        StreamWriter writer = new StreamWriter(Path.Combine("..", "Measurements", $"{replay}_{name}_{DateTime.Now.ToString("yyMMddHHmm")}_{iterations}.data"));
         writer.WriteLine("CacheRefs;CacheMisses;Energy(J);time(s)");
-        foreach(var measurement in results)
-        {
-            writer.WriteLine(measurement.ToString());
-        }
+        foreach (var measurement in results) writer.WriteLine(measurement.ToString());
         writer.Close();
     }
 }
