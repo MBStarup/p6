@@ -106,7 +106,7 @@ class TestRunner
         for (int i = 0; i < iterations; i++)
         {
             Console.SetCursorPosition(cursor_left, cursor_top);
-            System.Console.Write(i);
+            System.Console.Write(i + 1);
             perf.Start();
             StreamReader reader = perf.StandardError;
             string output = reader.ReadToEnd();
