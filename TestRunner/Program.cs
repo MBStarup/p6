@@ -37,7 +37,7 @@ class Program
             {
                 argQueue.Dequeue(); //remove the -n
                 name = argQueue.Dequeue();
-                nextArg = argQueue.Dequeue();
+                nextArg = argQueue.Peek();
             }
             Games.Add((game, name));
         }
