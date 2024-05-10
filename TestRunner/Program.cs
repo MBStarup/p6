@@ -112,7 +112,7 @@ class TestRunner
             string output = reader.ReadToEnd();
             results.Add(new MeasurementResults(output));
         }
-        System.Console.WriteLine($"Done, writing to file {outfile}\n");
+        System.Console.WriteLine($"\nDone, writing to file {outfile}\n");
 
         StreamWriter writer = new StreamWriter(outfile);
         writer.WriteLine("CacheRefs;CacheMisses;Energy(J);time(s)");
