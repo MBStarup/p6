@@ -9,11 +9,12 @@ class Program
     public static Queue<string> Replays = [];
     public static string USAGE = $"Usage: {System.AppDomain.CurrentDomain.FriendlyName} iterations {{-p game [-n name]}}... replay...";
 
-    private static void ExitWithUsage()
+    private static void ExitWithError(string error)
     {
-        Console.WriteLine(USAGE);
+        Console.WriteLine(error);
         Environment.Exit(-1);
     }
+    private static void ExitWithUsage() => ExitWithError(USAGE);
     public static void Main(string[] args)
     {
         if (args.Length < 4) ExitWithUsage();
@@ -42,6 +43,8 @@ class Program
 
         System.Console.WriteLine($"Running {iterations} iterations of replays [{(String.Join("; ", Replays))}] with games [{(String.Join("; ", Games))}]");
 
+        foreach (var game in Games) if (!File.Exists(game.Path)) ExitWithError($"Could not find game {game.Path}");
+        foreach (var replay in Replays) if (!File.Exists(replay)) ExitWithError($"Could not find replay {replay}");
 
         foreach (var replay in Replays)
         {
