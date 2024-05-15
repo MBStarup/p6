@@ -77,30 +77,30 @@ class Program
     }
 }
 
-class MeasurementResults
-{
-    public MeasurementResults(string perfString)
-    {
-        MatchCollection matchesINT = INTRegex.Matches(perfString);
-        MatchCollection matchesFP = FPRegex.Matches(perfString);
+// class MeasurementResults
+// {
+//     public MeasurementResults(string perfString)
+//     {
+//         MatchCollection matchesINT = INTRegex.Matches(perfString);
+//         MatchCollection matchesFP = FPRegex.Matches(perfString);
 
-        CacheRefs = int.Parse(matchesINT[0].Value, NumberStyles.AllowThousands);
-        CacheMisses = int.Parse(matchesINT[1].Value, NumberStyles.AllowThousands);
-        Energy = double.Parse(matchesFP[1].Value);
-        Seconds = double.Parse(matchesFP[2].Value);
-    }
-    Regex FPRegex = new Regex(@"\d*\.\d*");
-    Regex INTRegex = new Regex(@"\d{1,3}(\,\d{3})*");
+//         CacheRefs = int.Parse(matchesINT[0].Value, NumberStyles.AllowThousands);
+//         CacheMisses = int.Parse(matchesINT[1].Value, NumberStyles.AllowThousands);
+//         Energy = double.Parse(matchesFP[1].Value);
+//         Seconds = double.Parse(matchesFP[2].Value);
+//     }
+//     Regex FPRegex = new Regex(@"\d*\.\d*");
+//     Regex INTRegex = new Regex(@"\d{1,3}(\,\d{3})*");
 
-    public double Energy;
-    public double Seconds;
-    public int CacheRefs;
-    public int CacheMisses;
-    public override string ToString()
-    {
-        return CacheRefs + ";" + CacheMisses + ";" + Energy + ";" + Seconds;
-    }
-}
+//     public double Energy;
+//     public double Seconds;
+//     public int CacheRefs;
+//     public int CacheMisses;
+//     public override string ToString()
+//     {
+//         return CacheRefs + ";" + CacheMisses + ";" + Energy + ";" + Seconds;
+//     }
+// }
 
 class TestRunner
 {
@@ -132,7 +132,6 @@ class TestRunner
             System.Console.Write(i + 1);
             perf.Start();
             StreamReader reader = perf.StandardError;
-            System.Console.WriteLine("--------------");
             for (int j = 0; j < 3; j++)reader.ReadLine(); //skip empty/usless lines
             for (int j = 0; j < Program.PERFSTATS.Count(); j++) {result.Append(Program.PERFSTATS[j].Parser(reader.ReadLine().Split(" ", StringSplitOptions.RemoveEmptyEntries)[0])); result.Append(";");}
             for (int j = 0; j < 1; j++)reader.ReadLine(); //skip empty line
