@@ -11,7 +11,7 @@ class Program
     public static (string Name, Func<string, string> Parser)[] PERFSTATS = [
         ("cache-references",            ParseInt),
         ("cache-misses",                ParseInt),
-        ("power/energy-cores/",         ParseDouble)
+        ("power/energy-cores/",         ParseDouble),
         ("L1-dcache-loads",             ParseInt),
         ("L1-dcache-load-misses",       ParseInt),
         ("L1-dcache-stores",            ParseInt),
@@ -19,7 +19,7 @@ class Program
         ("LLC-loads",                   ParseInt),
         ("LLC-load-misses",             ParseInt),
         ("LLC-stores",                  ParseInt),
-        ("LLC-store-misses",            ParseInt),
+        ("LLC-store-misses",            ParseInt)
     ];
 
     public static string PERFOPTIONS = $"stat -e \"{String.Join("\",\"",PERFSTATS.Select(x => x.Name))}\" -a";
