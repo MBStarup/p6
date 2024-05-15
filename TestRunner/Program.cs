@@ -123,7 +123,7 @@ class TestRunner
     {
         System.Console.Write($"Running test with replay {replay} on game {name}: ");
         var (cursor_left, cursor_top) = Console.GetCursorPosition();
-        var outfile = Path.Combine("..", "Measurements", $"{replay}_{name}_{DateTime.Now.ToString("yyMMddHHmm")}_{iterations}.data");
+        var outfile = Path.Combine("..", "Measurements", $"{replay}_{name}_{DateTime.Now.ToString("yyMMddHHmm")}_{iterations}.datax");
         List<string> results = new List<string>(iterations);
         for (int i = 0; i < iterations; i++)
         {
