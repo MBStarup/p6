@@ -6,11 +6,12 @@ using System.Text.RegularExpressions;
 
 class Program
 {
-    public static string ParseInt(string str)  {System.Console.WriteLine($"parsing int: {str}"); return Int64.Parse(str, NumberStyles.AllowThousands).ToString();}
+    public static string ParseInt(string str)  => Int64.Parse(str, NumberStyles.AllowThousands).ToString();
     public static string ParseDouble(string str) => double.Parse(str, NumberStyles.AllowThousands | NumberStyles.AllowDecimalPoint).ToString();
     public static (string Name, Func<string, string> Parser)[] PERFSTATS = [
         ("cache-references",            ParseInt),
         ("cache-misses",                ParseInt),
+        ("power/energy-cores/",         ParseDouble)
         ("L1-dcache-loads",             ParseInt),
         ("L1-dcache-load-misses",       ParseInt),
         ("L1-dcache-stores",            ParseInt),
@@ -19,7 +20,6 @@ class Program
         ("LLC-load-misses",             ParseInt),
         ("LLC-stores",                  ParseInt),
         ("LLC-store-misses",            ParseInt),
-        ("power/energy-cores/",         ParseDouble)
     ];
 
     public static string PERFOPTIONS = $"stat -e \"{String.Join("\",\"",PERFSTATS.Select(x => x.Name))}\" -a";
