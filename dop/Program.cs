@@ -1,6 +1,6 @@
 ﻿#define RENDERING
 #define INPUT
-#define RECORDING
+// #define RECORDING
 // #define REPLAYING
 using System;
 using System.Diagnostics;
@@ -182,22 +182,6 @@ public struct AxeMan()
             }
             game.Players[i] = player;
         }
-        foreach (LootBox lootBox in game.LootBoxs)
-        {
-            if (axeMan.Collider.Overlaps(lootBox.Collider)) { }
-        }
-        foreach (Shell shell in game.Shells)
-        {
-            if (axeMan.Collider.Overlaps(shell.Collider)) { }
-        }
-        foreach (Bolt bolt in game.Bolts)
-        {
-            if (axeMan.Collider.Overlaps(bolt.Collider)) { }
-        }
-        foreach (Arrow arrow in game.Arrows)
-        {
-            if (axeMan.Collider.Overlaps(arrow.Collider)) { }
-        }
     }
 }
 public struct Slime()
@@ -264,22 +248,6 @@ public struct Slime()
                 }
             }
             game.Players[i] = player;
-        }
-        foreach (LootBox lootBox in game.LootBoxs)
-        {
-            if (slime.Collider.Overlaps(lootBox.Collider)) { }
-        }
-        foreach (Shell shell in game.Shells)
-        {
-            if (slime.Collider.Overlaps(shell.Collider)) { }
-        }
-        foreach (Bolt bolt in game.Bolts)
-        {
-            if (slime.Collider.Overlaps(bolt.Collider)) { }
-        }
-        foreach (Arrow arrow in game.Arrows)
-        {
-            if (slime.Collider.Overlaps(arrow.Collider)) { }
         }
     }
 }
@@ -375,24 +343,6 @@ public struct Player()
                 }
             }
         }
-        foreach (LootBox lootBox in game.LootBoxs)
-        {
-            if (player.Collider.Overlaps(lootBox.Collider)) { }
-        }
-        foreach (Shell shell in game.Shells)
-        {
-            if (player.Collider.Overlaps(shell.Collider)) { }
-        }
-        foreach (Bolt bolt in game.Bolts)
-        {
-            if (player.Collider.Overlaps(bolt.Collider)) { }
-        }
-        foreach (Arrow arrow in game.Arrows)
-        {
-            if (player.Collider.Overlaps(arrow.Collider)) { }
-        }
-
-
     }
 }
 public struct LootBox
@@ -439,22 +389,6 @@ public struct LootBox
                 game.RemoveLootBox(lootBox);
             }
             game.Players[i] = player;
-        }
-        foreach (LootBox otherLootBox in game.LootBoxs)
-        {
-            if (otherLootBox.ID != lootBox.ID && otherLootBox.Collider.Overlaps(lootBox.Collider)) { }
-        }
-        foreach (Shell shell in game.Shells)
-        {
-            if (lootBox.Collider.Overlaps(shell.Collider)) { }
-        }
-        foreach (Bolt bolt in game.Bolts)
-        {
-            if (lootBox.Collider.Overlaps(bolt.Collider)) { }
-        }
-        foreach (Arrow arrow in game.Arrows)
-        {
-            if (lootBox.Collider.Overlaps(arrow.Collider)) { }
         }
     }
 }
@@ -506,26 +440,6 @@ public struct Shell
                 game.RemoveShell(shell);
             }
             game.Slimes[i] = slime; //dealing with value struct memes this seems slow or somethign idk :shrug:
-        }
-        foreach (Player player in game.Players)
-        {
-            if (shell.Collider.Overlaps(player.Collider)) { }
-        }
-        foreach (LootBox lootBox in game.LootBoxs)
-        {
-            if (shell.Collider.Overlaps(lootBox.Collider)) { }
-        }
-        foreach (Shell otherShell in game.Shells)
-        {
-            if (otherShell.ID != shell.ID && otherShell.Collider.Overlaps(shell.Collider)) { }
-        }
-        foreach (Bolt bolt in game.Bolts)
-        {
-            if (shell.Collider.Overlaps(bolt.Collider)) { }
-        }
-        foreach (Arrow arrow in game.Arrows)
-        {
-            if (shell.Collider.Overlaps(arrow.Collider)) { }
         }
     }
 }
@@ -580,26 +494,6 @@ public struct Bolt
             }
             game.Slimes[i] = slime; //dealing with value struct memes this seems slow or somethign idk :shrug:
         }
-        foreach (Player player in game.Players)
-        {
-            if (bolt.Collider.Overlaps(player.Collider)) { }
-        }
-        foreach (LootBox lootBox in game.LootBoxs)
-        {
-            if (bolt.Collider.Overlaps(lootBox.Collider)) { }
-        }
-        foreach (Shell shell in game.Shells)
-        {
-            if (bolt.Collider.Overlaps(shell.Collider)) { }
-        }
-        foreach (Bolt otherBolt in game.Bolts)
-        {
-            if (otherBolt.ID != bolt.ID && otherBolt.Collider.Overlaps(bolt.Collider)) { }
-        }
-        foreach (Arrow arrow in game.Arrows)
-        {
-            if (bolt.Collider.Overlaps(arrow.Collider)) { }
-        }
     }
 }
 public struct Arrow
@@ -649,26 +543,6 @@ public struct Arrow
                 game.RemoveArrow(arrow);
             }
             game.Slimes[i] = slime; //dealing with value struct memes this seems slow or somethign idk :shrug:
-        }
-        foreach (Player player in game.Players)
-        {
-            if (arrow.Collider.Overlaps(player.Collider)) { }
-        }
-        foreach (LootBox lootBox in game.LootBoxs)
-        {
-            if (arrow.Collider.Overlaps(lootBox.Collider)) { }
-        }
-        foreach (Shell shell in game.Shells)
-        {
-            if (arrow.Collider.Overlaps(shell.Collider)) { }
-        }
-        foreach (Bolt bolt in game.Bolts)
-        {
-            if (arrow.Collider.Overlaps(bolt.Collider)) { }
-        }
-        foreach (Arrow otherArrow in game.Arrows)
-        {
-            if (otherArrow.ID != arrow.ID && otherArrow.Collider.Overlaps(arrow.Collider)) { }
         }
     }
 }
