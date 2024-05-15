@@ -14,19 +14,24 @@ def ReadData(path):
 parser = argparse.ArgumentParser()
 parser.add_argument("files", nargs="+", help='<Required> Provide inputs')
 
+class Empty:
+    pass
+def parse(path): 
+    result = Empty()
+    result.path = path
+    result.replay, result.paradigm, result.date, result.iterations = os.path.splitext(os.path.basename(os.path.normpath(path)))[0].split('_')
+    result.cacherefs, result.cachemisses, result.energyuse, result.time = ReadData(path) #! make sure this matches the layout of the file
+    return result
 
 fig, ax = plot.subplots(2,2)
 
-for i, file in enumerate(parser.parse_args().files):
-    data = ReadData(file)
-    cacherefs = data[0]
-    cachemisses = data[1]
-    energyuse = data[2]
-    time = data[3]
-    ax[0,0].scatter(x = cacherefs, y = cachemisses, label = os.path.basename(os.path.normpath(file)))
-    ax[0,1].boxplot(x = energyuse, positions = [i], labels = [os.path.basename(os.path.normpath(file))])
-    ax[1,0].scatter(x = time, y = energyuse, label = os.path.basename(os.path.normpath(file)))
-    ax[1,1].boxplot(x = time, positions = [i], labels = [os.path.basename(os.path.normpath(file))])
+results = list(map(parse, parser.parse_args().files))
+
+for i, result in enumerate(results):
+    ax[0,0].scatter(x = result.cacherefs, y = result.cachemisses, label = result.paradigm)
+    ax[0,1].boxplot(x = result.energyuse, positions = [i], labels = [result.paradigm])
+    ax[1,0].scatter(x = result.time, y = result.energyuse, label = result.paradigm)
+    ax[1,1].boxplot(x = result.time, positions = [i], labels = [result.paradigm])
 
 ax[0,0].set_xlabel("Cache refs")
 ax[0,0].set_ylabel("Cache misses")

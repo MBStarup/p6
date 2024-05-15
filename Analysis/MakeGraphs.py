@@ -21,10 +21,11 @@ def parse(path):
     result = Empty()
     result.path = path
     result.replay, result.paradigm, result.date, result.iterations = os.path.splitext(os.path.basename(os.path.normpath(path)))[0].split('_')
-    result.cacherefs, result.cachemisses, result.energyuse, result.time = ReadData(path)
+    result.cacherefs, result.cachemisses, result.energyuse, result.time = ReadData(path) #! make sure this matches the layout of the file
     return result
 
-figsize = (15, 12)
+plot.rcParams.update({'font.size': 22})
+figsize = (8, 6)
 
 results = list(map(parse, parser.parse_args().file))
 
